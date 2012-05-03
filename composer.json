@@ -4,7 +4,6 @@
     "description": "The Symfony PHP framework",
     "keywords": ["framework"],
     "homepage": "http://symfony.com",
-    "version": "2.1.0",
     "license": "MIT",
     "authors": [
         {
@@ -18,21 +17,15 @@
     ],
     "require": {
         "php": ">=5.3.2",
-        "doctrine/common": "2.2.*",
-        "monolog/monolog": "1.0.*",
-        "swiftmailer/swiftmailer": ">=4.1.2,<4.2-dev",
         "twig/twig": ">=1.1,<2.0-dev"
     },
     "replace": {
         "symfony/doctrine-bridge": "self.version",
         "symfony/monolog-bridge": "self.version",
+        "symfony/propel1-bridge": "self.version",
         "symfony/twig-bridge": "self.version",
-        "symfony/doctrine-abstract-bundle": "self.version",
-        "symfony/doctrine-bundle": "self.version",
         "symfony/framework-bundle": "self.version",
-        "symfony/monolog-bundle": "self.version",
         "symfony/security-bundle": "self.version",
-        "symfony/swiftmailer-bundle": "self.version",
         "symfony/twig-bundle": "self.version",
         "symfony/web-profiler-bundle": "self.version",
         "symfony/browser-kit": "self.version",
@@ -58,7 +51,22 @@
         "symfony/validator": "self.version",
         "symfony/yaml": "self.version"
     },
+    "require-dev": {
+        "doctrine/dbal": "2.2.*",
+        "doctrine/orm": "2.2.*",
+        "doctrine/data-fixtures": "1.0.*",
+        "propel/propel1": "dev-master",
+        "monolog/monolog": "dev-master"
+    },
     "autoload": {
-        "psr-0": { "Symfony": "src/" }
+        "psr-0": {
+            "Symfony": "src/",
+            "SessionHandlerInterface": "src/Symfony/Component/HttpFoundation/Resources/stubs"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.1-dev"
+        }
     }
 }

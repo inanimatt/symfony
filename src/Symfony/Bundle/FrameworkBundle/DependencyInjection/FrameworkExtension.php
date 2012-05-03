@@ -17,6 +17,7 @@ use Symfony\Component\DependencyInjection\DefinitionDecorator;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Config\Resource\DirectoryResource;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\Config\FileLocator;
@@ -122,6 +123,7 @@ class FrameworkExtension extends Extension
             'Symfony\\Component\\EventDispatcher\\EventDispatcher',
             'Symfony\\Component\\EventDispatcher\\Event',
             'Symfony\\Component\\EventDispatcher\\EventSubscriberInterface',
+            'Symfony\\Component\\EventDispatcher\\ContainerAwareEventDispatcher',
 
             'Symfony\\Component\\HttpKernel\\HttpKernel',
             'Symfony\\Component\\HttpKernel\\EventListener\\ResponseListener',
@@ -141,7 +143,6 @@ class FrameworkExtension extends Extension
             'Symfony\\Bundle\\FrameworkBundle\\Controller\\ControllerResolver',
             // Cannot be included because annotations will parse the big compiled class file
             // 'Symfony\\Bundle\\FrameworkBundle\\Controller\\Controller',
-            'Symfony\\Bundle\\FrameworkBundle\\ContainerAwareEventDispatcher',
             'Symfony\\Bundle\\FrameworkBundle\\HttpKernel',
         ));
     }
@@ -202,10 +203,13 @@ class FrameworkExtension extends Extension
 
         // Choose storage class based on the DSN
         $supported = array(
-            'sqlite'  => 'Symfony\Component\HttpKernel\Profiler\SqliteProfilerStorage',
-            'mysql'   => 'Symfony\Component\HttpKernel\Profiler\MysqlProfilerStorage',
-            'file'    => 'Symfony\Component\HttpKernel\Profiler\FileProfilerStorage',
-            'mongodb' => 'Symfony\Component\HttpKernel\Profiler\MongoDbProfilerStorage',
+            'sqlite'    => 'Symfony\Component\HttpKernel\Profiler\SqliteProfilerStorage',
+            'mysql'     => 'Symfony\Component\HttpKernel\Profiler\MysqlProfilerStorage',
+            'file'      => 'Symfony\Component\HttpKernel\Profiler\FileProfilerStorage',
+            'mongodb'   => 'Symfony\Component\HttpKernel\Profiler\MongoDbProfilerStorage',
+            'memcache'  => 'Symfony\Component\HttpKernel\Profiler\MemcacheProfilerStorage',
+            'memcached' => 'Symfony\Component\HttpKernel\Profiler\MemcachedProfilerStorage',
+            'redis'     => 'Symfony\Component\HttpKernel\Profiler\RedisProfilerStorage',
         );
         list($class, ) = explode(':', $config['dsn'], 2);
         if (!isset($supported[$class])) {
@@ -292,16 +296,33 @@ class FrameworkExtension extends Extension
         // session storage
         $container->setAlias('session.storage', $config['storage_id']);
         $options = array();
-        foreach (array('name', 'lifetime', 'path', 'domain', 'secure', 'httponly') as $key) {
+        foreach (array('name', 'cookie_lifetime', 'cookie_path', 'cookie_domain', 'cookie_secure', 'cookie_httponly', 'auto_start', 'gc_maxlifetime', 'gc_probability', 'gc_divisor') as $key) {
             if (isset($config[$key])) {
                 $options[$key] = $config[$key];
             }
         }
+
+        //we deprecated session options without cookie_ prefix, but we are still supporting them,
+        //Let's merge the ones that were supplied without prefix
+        foreach (array('lifetime', 'path', 'domain', 'secure', 'httponly') as $key) {
+            if (!isset($options['cookie_'.$key]) && isset($config[$key])) {
+                $options['cookie_'.$key] = $config[$key];
+            }
+        }
         $container->setParameter('session.storage.options', $options);
+
+        // session handler (the internal callback registered with PHP session management)
+        $container->setAlias('session.handler', $config['handler_id']);
+
+        $container->setParameter('session.save_path', $config['save_path']);
 
         $this->addClassesToCompile(array(
             'Symfony\\Bundle\\FrameworkBundle\\EventListener\\SessionListener',
-            'Symfony\\Component\\HttpFoundation\\SessionStorage\\SessionStorageInterface',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\SessionStorageInterface',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\NativeSessionStorage',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Handler\NativeSessionHandler',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Proxy\AbstractProxy',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Proxy\SessionHandlerProxy',
             $container->getDefinition('session')->getClass(),
         ));
 
@@ -332,6 +353,7 @@ class FrameworkExtension extends Extension
 
         $container->setParameter('templating.helper.code.file_link_format', isset($links[$ide]) ? $links[$ide] : $ide);
         $container->setParameter('templating.helper.form.resources', $config['form']['resources']);
+        $container->setParameter('templating.hinclude.default_template', $config['hinclude_default_template']);
 
         if ($container->getParameter('kernel.debug')) {
             $loader->load('templating_debug.xml');
@@ -507,9 +529,13 @@ class FrameworkExtension extends Extension
 
             // Discover translation directories
             $dirs = array();
-            foreach ($container->getParameter('kernel.bundles') as $bundle) {
-                $reflection = new \ReflectionClass($bundle);
+            $overridePath = $container->getParameter('kernel.root_dir').'/Resources/%s/translations';
+            foreach ($container->getParameter('kernel.bundles') as $bundle => $class) {
+                $reflection = new \ReflectionClass($class);
                 if (is_dir($dir = dirname($reflection->getFilename()).'/Resources/translations')) {
+                    $dirs[] = $dir;
+                }
+                if (is_dir($dir = sprintf($overridePath, $bundle))) {
                     $dirs[] = $dir;
                 }
             }
@@ -519,14 +545,20 @@ class FrameworkExtension extends Extension
 
             // Register translation resources
             if ($dirs) {
-                $finder = new Finder();
-                $finder->files()->filter(function (\SplFileInfo $file) {
-                    return 2 === substr_count($file->getBasename(), '.') && preg_match('/\.\w+$/', $file->getBasename());
-                })->in($dirs);
+                foreach ($dirs as $dir) {
+                    $container->addResource(new DirectoryResource($dir));
+                }
+                $finder = Finder::create()
+                    ->files()
+                    ->filter(function (\SplFileInfo $file) {
+                        return 2 === substr_count($file->getBasename(), '.') && preg_match('/\.\w+$/', $file->getBasename());
+                    })
+                    ->in($dirs)
+                ;
+
                 foreach ($finder as $file) {
                     // filename is domain.locale.format
                     list($domain, $locale, $format) = explode('.', $file->getBasename(), 3);
-
                     $translator->addMethodCall('addResource', array($format, (string) $file, $locale, $domain));
                 }
             }
@@ -566,7 +598,8 @@ class FrameworkExtension extends Extension
 
     private function getValidatorXmlMappingFiles(ContainerBuilder $container)
     {
-        $files = array(__DIR__.'/../../../Component/Form/Resources/config/validation.xml');
+        $reflClass = new \ReflectionClass('Symfony\Component\Form\FormInterface');
+        $files = array(dirname($reflClass->getFileName()).'/Resources/config/validation.xml');
         $container->addResource(new FileResource($files[0]));
 
         foreach ($container->getParameter('kernel.bundles') as $bundle) {
@@ -611,7 +644,7 @@ class FrameworkExtension extends Extension
                 ->replaceArgument(2, $config['debug'])
             ;
             $container->setAlias('annotation_reader', 'annotations.file_cache_reader');
-        } else if('none' !== $config['cache']) {
+        } elseif ('none' !== $config['cache']) {
             $container
                 ->getDefinition('annotations.cached_reader')
                 ->replaceArgument(1, new Reference($config['cache']))

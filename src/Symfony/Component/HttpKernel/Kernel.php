@@ -27,14 +27,13 @@ use Symfony\Component\HttpKernel\Bundle\BundleInterface;
 use Symfony\Component\HttpKernel\Config\FileLocator;
 use Symfony\Component\HttpKernel\DependencyInjection\MergeExtensionConfigurationPass;
 use Symfony\Component\HttpKernel\DependencyInjection\AddClassesToCachePass;
-use Symfony\Component\HttpKernel\DependencyInjection\Extension as DIExtension;
 use Symfony\Component\HttpKernel\Debug\ErrorHandler;
 use Symfony\Component\HttpKernel\Debug\ExceptionHandler;
 use Symfony\Component\Config\Loader\LoaderResolver;
 use Symfony\Component\Config\Loader\DelegatingLoader;
 use Symfony\Component\Config\ConfigCache;
 use Symfony\Component\ClassLoader\ClassCollectionLoader;
-use Symfony\Component\ClassLoader\DebugUniversalClassLoader;
+use Symfony\Component\ClassLoader\DebugClassLoader;
 
 /**
  * The Kernel is the heart of the Symfony system.
@@ -57,6 +56,7 @@ abstract class Kernel implements KernelInterface, TerminableInterface
     protected $name;
     protected $startTime;
     protected $classes;
+    protected $errorReportingLevel;
 
     const VERSION = '2.1.0-DEV';
 
@@ -90,8 +90,8 @@ abstract class Kernel implements KernelInterface, TerminableInterface
             ini_set('display_errors', 1);
             error_reporting(-1);
 
-            DebugUniversalClassLoader::enable();
-            ErrorHandler::register();
+            DebugClassLoader::enable();
+            ErrorHandler::register($this->errorReportingLevel);
             if ('cli' !== php_sapi_name()) {
                 ExceptionHandler::register();
             }
@@ -614,7 +614,7 @@ abstract class Kernel implements KernelInterface, TerminableInterface
     {
         $parameters = array();
         foreach ($_SERVER as $key => $value) {
-            if ('SYMFONY__' === substr($key, 0, 9)) {
+            if (0 === strpos($key, 'SYMFONY__')) {
                 $parameters[strtolower(str_replace('__', '.', substr($key, 9)))] = $value;
             }
         }
@@ -639,7 +639,7 @@ abstract class Kernel implements KernelInterface, TerminableInterface
             }
         }
 
-        $container = new ContainerBuilder(new ParameterBag($this->getKernelParameters()));
+        $container = $this->getContainerBuilder();
         $extensions = array();
         foreach ($this->bundles as $bundle) {
             if ($extension = $bundle->getContainerExtension()) {
@@ -668,6 +668,16 @@ abstract class Kernel implements KernelInterface, TerminableInterface
         $container->compile();
 
         return $container;
+    }
+
+    /**
+     * Gets a new ContainerBuilder instance used to build the service container.
+     *
+     * @return ContainerBuilder
+     */
+    protected function getContainerBuilder()
+    {
+        return new ContainerBuilder(new ParameterBag($this->getKernelParameters()));
     }
 
     /**

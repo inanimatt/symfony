@@ -133,7 +133,7 @@ abstract class AbstractAuthenticationListener implements ListenerInterface
 
         try {
             if (!$request->hasPreviousSession()) {
-                throw new SessionUnavailableException('Your session has timed-out, or you have disabled cookies.');
+                throw new SessionUnavailableException('Your session has timed out, or you have disabled cookies.');
             }
 
             if (null === $returnValue = $this->attemptAuthentication($request)) {
@@ -192,7 +192,9 @@ abstract class AbstractAuthenticationListener implements ListenerInterface
         $this->securityContext->setToken(null);
 
         if (null !== $this->failureHandler) {
-            return $this->failureHandler->onAuthenticationFailure($request, $failed);
+            if (null !== $response = $this->failureHandler->onAuthenticationFailure($request, $failed)) {
+                return $response;
+            }
         }
 
         if (null === $this->options['failure_path']) {
@@ -236,9 +238,11 @@ abstract class AbstractAuthenticationListener implements ListenerInterface
             $this->dispatcher->dispatch(SecurityEvents::INTERACTIVE_LOGIN, $loginEvent);
         }
 
+        $response = null;
         if (null !== $this->successHandler) {
             $response = $this->successHandler->onAuthenticationSuccess($request, $token);
-        } else {
+        }
+        if (null === $response) {
             $response = $this->httpUtils->createRedirectResponse($request, $this->determineTargetUrl($request));
         }
 

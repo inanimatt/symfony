@@ -154,7 +154,10 @@ class FullTransformer
             return $this->calculateUnixTimestamp($dateTime, $options);
         }
 
-        throw new \InvalidArgumentException(sprintf("Failed to match value '%s' with pattern '%s'", $value, $this->pattern));
+        // behave like the intl extension
+        StubIntl::setError(StubIntl::U_PARSE_ERROR, 'Date parsing failed');
+
+        return false;
     }
 
     /**
@@ -289,7 +292,7 @@ class FullTransformer
 
         // If month is false, return immediately (intl behavior)
         if (false === $month) {
-            StubIntl::setErrorCode(StubIntl::U_PARSE_ERROR);
+            StubIntl::setError(StubIntl::U_PARSE_ERROR, 'Date parsing failed');
 
             return false;
         }

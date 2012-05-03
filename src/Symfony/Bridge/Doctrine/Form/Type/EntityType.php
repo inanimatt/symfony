@@ -12,9 +12,6 @@
 namespace Symfony\Bridge\Doctrine\Form\Type;
 
 use Doctrine\Common\Persistence\ObjectManager;
-use Symfony\Component\Form\FormBuilder;
-use Symfony\Bridge\Doctrine\Form\ChoiceList\EntityChoiceList;
-use Symfony\Bridge\Doctrine\Form\ChoiceList\EntityLoaderInterface;
 use Symfony\Bridge\Doctrine\Form\ChoiceList\ORMQueryBuilderLoader;
 
 class EntityType extends DoctrineType
@@ -26,12 +23,12 @@ class EntityType extends DoctrineType
      * @param array $options
      * @return ORMQueryBuilderLoader
      */
-    protected function getLoader(ObjectManager $manager, array $options)
+    public function getLoader(ObjectManager $manager, $queryBuilder, $class)
     {
         return new ORMQueryBuilderLoader(
-            $options['query_builder'],
+            $queryBuilder,
             $manager,
-            $options['class']
+            $class
         );
     }
 

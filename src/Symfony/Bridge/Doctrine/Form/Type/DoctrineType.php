@@ -16,10 +16,10 @@ use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Form\FormBuilder;
 use Symfony\Bridge\Doctrine\Form\ChoiceList\EntityChoiceList;
 use Symfony\Bridge\Doctrine\Form\ChoiceList\EntityLoaderInterface;
-use Symfony\Bridge\Doctrine\Form\EventListener\MergeCollectionListener;
-use Symfony\Bridge\Doctrine\Form\DataTransformer\EntitiesToArrayTransformer;
-use Symfony\Bridge\Doctrine\Form\DataTransformer\EntityToIdTransformer;
+use Symfony\Bridge\Doctrine\Form\EventListener\MergeDoctrineCollectionListener;
+use Symfony\Bridge\Doctrine\Form\DataTransformer\CollectionToArrayTransformer;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Options;
 
 abstract class DoctrineType extends AbstractType
 {
@@ -37,35 +37,31 @@ abstract class DoctrineType extends AbstractType
     {
         if ($options['multiple']) {
             $builder
-                ->addEventSubscriber(new MergeCollectionListener())
-                ->prependClientTransformer(new EntitiesToArrayTransformer($options['choice_list']))
+                ->addEventSubscriber(new MergeDoctrineCollectionListener())
+                ->prependClientTransformer(new CollectionToArrayTransformer())
             ;
-        } else {
-            $builder->prependClientTransformer(new EntityToIdTransformer($options['choice_list']));
         }
     }
 
-    public function getDefaultOptions(array $options)
+    public function getDefaultOptions()
     {
-        $defaultOptions = array(
-            'em'                => null,
-            'class'             => null,
-            'property'          => null,
-            'query_builder'     => null,
-            'loader'            => null,
-            'choices'           => null,
-            'group_by'          => null,
-        );
+        $registry = $this->registry;
+        $type = $this;
 
-        $options = array_replace($defaultOptions, $options);
+        $loader = function (Options $options) use ($type, $registry) {
+            if (null !== $options['query_builder']) {
+                $manager = $registry->getManager($options['em']);
 
-        if (!isset($options['choice_list'])) {
-            $manager = $this->registry->getManager($options['em']);
-            if (isset($options['query_builder'])) {
-                $options['loader'] = $this->getLoader($manager, $options);
+                return $type->getLoader($manager, $options['query_builder'], $options['class']);
             }
 
-            $defaultOptions['choice_list'] = new EntityChoiceList(
+            return null;
+        };
+
+        $choiceList = function (Options $options) use ($registry) {
+            $manager = $registry->getManager($options['em']);
+
+            return new EntityChoiceList(
                 $manager,
                 $options['class'],
                 $options['property'],
@@ -73,9 +69,18 @@ abstract class DoctrineType extends AbstractType
                 $options['choices'],
                 $options['group_by']
             );
-        }
+        };
 
-        return $defaultOptions;
+        return array(
+            'em'                => null,
+            'class'             => null,
+            'property'          => null,
+            'query_builder'     => null,
+            'loader'            => $loader,
+            'choices'           => null,
+            'choice_list'       => $choiceList,
+            'group_by'          => null,
+        );
     }
 
     /**
@@ -85,7 +90,7 @@ abstract class DoctrineType extends AbstractType
      * @param array $options
      * @return EntityLoaderInterface
      */
-    abstract protected function getLoader(ObjectManager $manager, array $options);
+    abstract public function getLoader(ObjectManager $manager, $queryBuilder, $class);
 
     public function getParent(array $options)
     {

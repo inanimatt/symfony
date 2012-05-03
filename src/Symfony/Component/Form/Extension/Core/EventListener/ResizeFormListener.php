@@ -66,7 +66,8 @@ class ResizeFormListener implements EventSubscriberInterface
         return array(
             FormEvents::PRE_SET_DATA => 'preSetData',
             FormEvents::PRE_BIND => 'preBind',
-            FormEvents::BIND_NORM_DATA => 'onBindNormData',
+            // (MergeCollectionListener, MergeDoctrineCollectionListener)
+            FormEvents::BIND_NORM_DATA => array('onBindNormData', 50),
         );
     }
 
@@ -143,6 +144,8 @@ class ResizeFormListener implements EventSubscriberInterface
             throw new UnexpectedTypeException($data, 'array or (\Traversable and \ArrayAccess)');
         }
 
+        // The data mapper only adds, but does not remove items, so do this
+        // here
         if ($this->allowDelete) {
             foreach ($data as $name => $child) {
                 if (!$form->has($name)) {

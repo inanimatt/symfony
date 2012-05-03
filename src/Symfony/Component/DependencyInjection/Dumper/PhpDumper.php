@@ -326,7 +326,7 @@ class PhpDumper extends Dumper
                 throw new RuntimeException('Factory method requires a factory service or factory class in service definition for '.$id);
             }
         } elseif (false !== strpos($class, '$')) {
-            $code = sprintf("        \$class = %s;\n        $return{$instantiation}new \$class(%s);\n", $class, implode(', ', $arguments));
+            $code = sprintf("        \$class = %s;\n\n        $return{$instantiation}new \$class(%s);\n", $class, implode(', ', $arguments));
         } else {
             $code = sprintf("        $return{$instantiation}new \\%s(%s);\n", substr(str_replace('\\\\', '\\', $class), 1, -1), implode(', ', $arguments));
         }
@@ -653,6 +653,8 @@ EOF;
      */
     private function addConstructor()
     {
+        $arguments = $this->container->getParameterBag()->all() ? 'new ParameterBag($this->getDefaultParameters())' : null;
+
         $code = <<<EOF
 
     /**
@@ -660,7 +662,7 @@ EOF;
      */
     public function __construct()
     {
-        parent::__construct(new ParameterBag(\$this->getDefaultParameters()));
+        parent::__construct($arguments);
 
 EOF;
 
