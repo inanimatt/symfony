@@ -16,7 +16,6 @@ use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\Extension\Core\CoreExtension;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 
 abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 {
@@ -115,7 +114,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testEnctype()
     {
-        $form = $this->factory->createNamedBuilder('form', 'name')
+        $form = $this->factory->createNamedBuilder('name', 'form')
             ->add('file', 'file')
             ->getForm();
 
@@ -124,7 +123,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testNoEnctype()
     {
-        $form = $this->factory->createNamedBuilder('form', 'name')
+        $form = $this->factory->createNamedBuilder('name', 'form')
             ->add('text', 'text')
             ->getForm();
 
@@ -133,7 +132,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabel()
     {
-        $form = $this->factory->createNamed('text', 'name');
+        $form = $this->factory->createNamed('name', 'text');
         $view = $form->createView();
         $this->renderWidget($view, array('label' => 'foo'));
         $html = $this->renderLabel($view);
@@ -148,7 +147,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelOnForm()
     {
-        $form = $this->factory->createNamed('date', 'name');
+        $form = $this->factory->createNamed('name', 'date');
         $view = $form->createView();
         $this->renderWidget($view, array('label' => 'foo'));
         $html = $this->renderLabel($view);
@@ -163,7 +162,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelWithCustomTextPassedAsOption()
     {
-        $form = $this->factory->createNamed('text', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'text', null, array(
             'label' => 'Custom label',
         ));
         $html = $this->renderLabel($form->createView());
@@ -178,7 +177,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelWithCustomTextPassedDirectly()
     {
-        $form = $this->factory->createNamed('text', 'name');
+        $form = $this->factory->createNamed('name', 'text');
         $html = $this->renderLabel($form->createView(), 'Custom label');
 
         $this->assertMatchesXpath($html,
@@ -191,7 +190,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelWithCustomTextPassedAsOptionAndDirectly()
     {
-        $form = $this->factory->createNamed('text', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'text', null, array(
             'label' => 'Custom label',
         ));
         $html = $this->renderLabel($form->createView(), 'Overridden label');
@@ -206,7 +205,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelDoesNotRenderFieldAttributes()
     {
-        $form = $this->factory->createNamed('text', 'name');
+        $form = $this->factory->createNamed('name', 'text');
         $html = $this->renderLabel($form->createView(), null, array(
             'attr' => array(
                 'class' => 'my&class'
@@ -223,7 +222,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelWithCustomOptionsPassedDirectly()
     {
-        $form = $this->factory->createNamed('text', 'name');
+        $form = $this->factory->createNamed('name', 'text');
         $html = $this->renderLabel($form->createView(), null, array(
             'label_attr' => array(
                 'class' => 'my&class'
@@ -240,7 +239,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLabelWithCustomTextAndCustomOptionsPassedDirectly()
     {
-        $form = $this->factory->createNamed('text', 'name');
+        $form = $this->factory->createNamed('name', 'text');
         $html = $this->renderLabel($form->createView(), 'Custom label', array(
             'label_attr' => array(
                 'class' => 'my&class'
@@ -258,7 +257,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testErrors()
     {
-        $form = $this->factory->createNamed('text', 'name');
+        $form = $this->factory->createNamed('name', 'text');
         $form->addError(new FormError('Error 1'));
         $form->addError(new FormError('Error 2'));
         $view = $form->createView();
@@ -277,7 +276,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testWidgetById()
     {
-        $form = $this->factory->createNamed('text', 'text_id');
+        $form = $this->factory->createNamed('text_id', 'text');
         $html = $this->renderWidget($form->createView());
 
         $this->assertMatchesXpath($html,
@@ -294,7 +293,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testCheckedCheckbox()
     {
-        $form = $this->factory->createNamed('checkbox', 'name', true);
+        $form = $this->factory->createNamed('name', 'checkbox', true);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -308,7 +307,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testUncheckedCheckbox()
     {
-        $form = $this->factory->createNamed('checkbox', 'name', false);
+        $form = $this->factory->createNamed('name', 'checkbox', false);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -321,7 +320,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testCheckboxWithValue()
     {
-        $form = $this->factory->createNamed('checkbox', 'name', false, array(
+        $form = $this->factory->createNamed('name', 'checkbox', false, array(
             'value' => 'foo&bar',
         ));
 
@@ -336,7 +335,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoice()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'multiple' => false,
             'expanded' => false,
@@ -357,7 +356,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceWithPreferred()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'preferred_choices' => array('&b'),
             'multiple' => false,
@@ -381,7 +380,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceWithPreferredAndNoSeparator()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'preferred_choices' => array('&b'),
             'multiple' => false,
@@ -403,7 +402,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceWithPreferredAndBlankSeparator()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'preferred_choices' => array('&b'),
             'multiple' => false,
@@ -426,7 +425,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testChoiceWithOnlyPreferred()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'preferred_choices' => array('&a', '&b'),
             'multiple' => false,
@@ -442,7 +441,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceNonRequired()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'required' => false,
             'multiple' => false,
@@ -465,7 +464,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceNonRequiredNoneSelected()
     {
-        $form = $this->factory->createNamed('choice', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'choice', null, array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'required' => false,
             'multiple' => false,
@@ -488,7 +487,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceWithNonRequiredEmptyValue()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'multiple' => false,
             'expanded' => false,
@@ -512,7 +511,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceRequiredWithEmptyValue()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'required' => true,
             'multiple' => false,
@@ -536,7 +535,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceRequiredWithEmptyValueViaView()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'required' => true,
             'multiple' => false,
@@ -559,7 +558,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceGrouped()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array(
                 'Group&1' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
                 'Group&2' => array('&c' => 'Choice&C'),
@@ -589,7 +588,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testMultipleChoice()
     {
-        $form = $this->factory->createNamed('choice', 'name', array('&a'), array(
+        $form = $this->factory->createNamed('name', 'choice', array('&a'), array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'multiple' => true,
             'expanded' => false,
@@ -610,7 +609,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testMultipleChoiceSkipEmptyValue()
     {
-        $form = $this->factory->createNamed('choice', 'name', array('&a'), array(
+        $form = $this->factory->createNamed('name', 'choice', array('&a'), array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'multiple' => true,
             'expanded' => false,
@@ -632,7 +631,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testMultipleChoiceNonRequired()
     {
-        $form = $this->factory->createNamed('choice', 'name', array('&a'), array(
+        $form = $this->factory->createNamed('name', 'choice', array('&a'), array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'required' => false,
             'multiple' => true,
@@ -654,7 +653,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceExpanded()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'multiple' => false,
             'expanded' => true,
@@ -676,7 +675,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceExpandedSkipEmptyValue()
     {
-        $form = $this->factory->createNamed('choice', 'name', '&a', array(
+        $form = $this->factory->createNamed('name', 'choice', '&a', array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B'),
             'multiple' => false,
             'expanded' => true,
@@ -699,7 +698,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleChoiceExpandedWithBooleanValue()
     {
-        $form = $this->factory->createNamed('choice', 'name', true, array(
+        $form = $this->factory->createNamed('name', 'choice', true, array(
             'choices' => array('1' => 'Choice&A', '0' => 'Choice&B'),
             'multiple' => false,
             'expanded' => true,
@@ -721,7 +720,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testMultipleChoiceExpanded()
     {
-        $form = $this->factory->createNamed('choice', 'name', array('&a', '&c'), array(
+        $form = $this->factory->createNamed('name', 'choice', array('&a', '&c'), array(
             'choices' => array('&a' => 'Choice&A', '&b' => 'Choice&B', '&c' => 'Choice&C'),
             'multiple' => true,
             'expanded' => true,
@@ -746,7 +745,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testCountry()
     {
-        $form = $this->factory->createNamed('country', 'name', 'AT');
+        $form = $this->factory->createNamed('name', 'country', 'AT');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/select
@@ -759,7 +758,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testCountryWithEmptyValue()
     {
-        $form = $this->factory->createNamed('country', 'name', 'AT', array(
+        $form = $this->factory->createNamed('name', 'country', 'AT', array(
             'empty_value' => 'Select&Country',
             'required' => false,
         ));
@@ -776,7 +775,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTime()
     {
-        $form = $this->factory->createNamed('datetime', 'name', '2011-02-03 04:05:06', array(
+        $form = $this->factory->createNamed('name', 'datetime', '2011-02-03 04:05:06', array(
             'input' => 'string',
             'with_seconds' => false,
         ));
@@ -815,7 +814,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTimeWithEmptyValueGlobal()
     {
-        $form = $this->factory->createNamed('datetime', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'datetime', null, array(
             'input' => 'string',
             'empty_value' => 'Change&Me',
             'required' => false,
@@ -855,7 +854,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTimeWithEmptyValueOnTime()
     {
-        $form = $this->factory->createNamed('datetime', 'name', '2011-02-03', array(
+        $form = $this->factory->createNamed('name', 'datetime', '2011-02-03', array(
             'input' => 'string',
             'empty_value' => array('hour' => 'Change&Me', 'minute' => 'Change&Me'),
             'required' => false,
@@ -895,7 +894,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTimeWithSeconds()
     {
-        $form = $this->factory->createNamed('datetime', 'name', '2011-02-03 04:05:06', array(
+        $form = $this->factory->createNamed('name', 'datetime', '2011-02-03 04:05:06', array(
             'input' => 'string',
             'with_seconds' => true,
         ));
@@ -937,7 +936,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTimeSingleText()
     {
-        $form = $this->factory->createNamed('datetime', 'name', '2011-02-03 04:05:06', array(
+        $form = $this->factory->createNamed('name', 'datetime', '2011-02-03 04:05:06', array(
             'input' => 'string',
             'date_widget' => 'single_text',
             'time_widget' => 'single_text',
@@ -947,12 +946,12 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./input
-            [@type="text"]
+            [@type="date"]
             [@id="name_date"]
             [@name="name[date]"]
             [@value="Feb 3, 2011"]
         /following-sibling::input
-            [@type="text"]
+            [@type="time"]
             [@id="name_time"]
             [@name="name[time]"]
             [@value="04:05"]
@@ -963,14 +962,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTimeWithWidgetSingleText()
     {
-        $form = $this->factory->createNamed('datetime', 'name', '2011-02-03 04:05:06', array(
+        $form = $this->factory->createNamed('name', 'datetime', '2011-02-03 04:05:06', array(
             'input' => 'string',
             'widget' => 'single_text',
         ));
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
-    [@type="text"]
+    [@type="datetime"]
     [@name="name"]
     [@value="2011-02-03 04:05"]
 '
@@ -979,7 +978,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateTimeWithWidgetSingleTextIgnoreDateAndTimeWidgets()
     {
-        $form = $this->factory->createNamed('datetime', 'name', '2011-02-03 04:05:06', array(
+        $form = $this->factory->createNamed('name', 'datetime', '2011-02-03 04:05:06', array(
             'input' => 'string',
             'date_widget' => 'choice',
             'time_widget' => 'choice',
@@ -988,7 +987,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
-    [@type="text"]
+    [@type="datetime"]
     [@name="name"]
     [@value="2011-02-03 04:05"]
 '
@@ -997,7 +996,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateChoice()
     {
-        $form = $this->factory->createNamed('date', 'name', '2011-02-03', array(
+        $form = $this->factory->createNamed('name', 'date', '2011-02-03', array(
             'input' => 'string',
             'widget' => 'choice',
         ));
@@ -1022,7 +1021,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateChoiceWithEmptyValueGlobal()
     {
-        $form = $this->factory->createNamed('date', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'date', null, array(
             'input' => 'string',
             'widget' => 'choice',
             'empty_value' => 'Change&Me',
@@ -1049,7 +1048,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateChoiceWithEmptyValueOnYear()
     {
-        $form = $this->factory->createNamed('date', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'date', null, array(
             'input' => 'string',
             'widget' => 'choice',
             'required' => false,
@@ -1076,7 +1075,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateText()
     {
-        $form = $this->factory->createNamed('date', 'name', '2011-02-03', array(
+        $form = $this->factory->createNamed('name', 'date', '2011-02-03', array(
             'input' => 'string',
             'widget' => 'text',
         ));
@@ -1104,14 +1103,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDateSingleText()
     {
-        $form = $this->factory->createNamed('date', 'name', '2011-02-03', array(
+        $form = $this->factory->createNamed('name', 'date', '2011-02-03', array(
             'input' => 'string',
             'widget' => 'single_text',
         ));
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
-    [@type="text"]
+    [@type="date"]
     [@name="name"]
     [@value="Feb 3, 2011"]
 '
@@ -1131,7 +1130,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testBirthDay()
     {
-        $form = $this->factory->createNamed('birthday', 'name', '2000-02-03', array(
+        $form = $this->factory->createNamed('name', 'birthday', '2000-02-03', array(
             'input' => 'string',
         ));
 
@@ -1155,7 +1154,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testBirthDayWithEmptyValue()
     {
-        $form = $this->factory->createNamed('birthday', 'name', '1950-01-01', array(
+        $form = $this->factory->createNamed('name', 'birthday', '1950-01-01', array(
             'input' => 'string',
             'empty_value' => '',
             'required' => false,
@@ -1184,7 +1183,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testEmail()
     {
-        $form = $this->factory->createNamed('email', 'name', 'foo&bar');
+        $form = $this->factory->createNamed('name', 'email', 'foo&bar');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1198,7 +1197,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testEmailWithMaxLength()
     {
-        $form = $this->factory->createNamed('email', 'name', 'foo&bar', array(
+        $form = $this->factory->createNamed('name', 'email', 'foo&bar', array(
             'max_length' => 123,
         ));
 
@@ -1214,7 +1213,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testFile()
     {
-        $form = $this->factory->createNamed('file', 'name');
+        $form = $this->factory->createNamed('name', 'file');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1225,7 +1224,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testHidden()
     {
-        $form = $this->factory->createNamed('hidden', 'name', 'foo&bar');
+        $form = $this->factory->createNamed('name', 'hidden', 'foo&bar');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1238,7 +1237,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testReadOnly()
     {
-        $form = $this->factory->createNamed('text', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'text', null, array(
             'read_only' => true,
         ));
 
@@ -1253,7 +1252,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testDisabled()
     {
-        $form = $this->factory->createNamed('text', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'text', null, array(
             'disabled' => true,
         ));
 
@@ -1268,7 +1267,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testInteger()
     {
-        $form = $this->factory->createNamed('integer', 'name', 123);
+        $form = $this->factory->createNamed('name', 'integer', 123);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1281,7 +1280,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLanguage()
     {
-        $form = $this->factory->createNamed('language', 'name', 'de');
+        $form = $this->factory->createNamed('name', 'language', 'de');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/select
@@ -1294,7 +1293,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testLocale()
     {
-        $form = $this->factory->createNamed('locale', 'name', 'de_AT');
+        $form = $this->factory->createNamed('name', 'locale', 'de_AT');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/select
@@ -1307,7 +1306,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testMoney()
     {
-        $form = $this->factory->createNamed('money', 'name', 1234.56, array(
+        $form = $this->factory->createNamed('name', 'money', 1234.56, array(
             'currency' => 'EUR',
         ));
 
@@ -1323,7 +1322,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testNumber()
     {
-        $form = $this->factory->createNamed('number', 'name', 1234.56);
+        $form = $this->factory->createNamed('name', 'number', 1234.56);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1336,7 +1335,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testPassword()
     {
-        $form = $this->factory->createNamed('password', 'name', 'foo&bar');
+        $form = $this->factory->createNamed('name', 'password', 'foo&bar');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1348,7 +1347,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testPasswordBoundNotAlwaysEmpty()
     {
-        $form = $this->factory->createNamed('password', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'password', null, array(
             'always_empty' => false,
         ));
         $form->bind('foo&bar');
@@ -1364,7 +1363,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testPasswordWithMaxLength()
     {
-        $form = $this->factory->createNamed('password', 'name', 'foo&bar', array(
+        $form = $this->factory->createNamed('name', 'password', 'foo&bar', array(
             'max_length' => 123,
         ));
 
@@ -1379,7 +1378,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testPercent()
     {
-        $form = $this->factory->createNamed('percent', 'name', 0.1);
+        $form = $this->factory->createNamed('name', 'percent', 0.1);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1393,7 +1392,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testCheckedRadio()
     {
-        $form = $this->factory->createNamed('radio', 'name', true);
+        $form = $this->factory->createNamed('name', 'radio', true);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1407,7 +1406,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testUncheckedRadio()
     {
-        $form = $this->factory->createNamed('radio', 'name', false);
+        $form = $this->factory->createNamed('name', 'radio', false);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1420,7 +1419,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testRadioWithValue()
     {
-        $form = $this->factory->createNamed('radio', 'name', false, array(
+        $form = $this->factory->createNamed('name', 'radio', false, array(
             'value' => 'foo&bar',
         ));
 
@@ -1435,7 +1434,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTextarea()
     {
-        $form = $this->factory->createNamed('textarea', 'name', 'foo&bar', array(
+        $form = $this->factory->createNamed('name', 'textarea', 'foo&bar', array(
             'pattern' => 'foo',
         ));
 
@@ -1450,7 +1449,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testText()
     {
-        $form = $this->factory->createNamed('text', 'name', 'foo&bar');
+        $form = $this->factory->createNamed('name', 'text', 'foo&bar');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1464,7 +1463,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTextWithMaxLength()
     {
-        $form = $this->factory->createNamed('text', 'name', 'foo&bar', array(
+        $form = $this->factory->createNamed('name', 'text', 'foo&bar', array(
             'max_length' => 123,
         ));
 
@@ -1480,7 +1479,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testSearch()
     {
-        $form = $this->factory->createNamed('search', 'name', 'foo&bar');
+        $form = $this->factory->createNamed('name', 'search', 'foo&bar');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1494,7 +1493,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTime()
     {
-        $form = $this->factory->createNamed('time', 'name', '04:05:06', array(
+        $form = $this->factory->createNamed('name', 'time', '04:05:06', array(
             'input' => 'string',
             'with_seconds' => false,
         ));
@@ -1518,7 +1517,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimeWithSeconds()
     {
-        $form = $this->factory->createNamed('time', 'name', '04:05:06', array(
+        $form = $this->factory->createNamed('name', 'time', '04:05:06', array(
             'input' => 'string',
             'with_seconds' => true,
         ));
@@ -1549,7 +1548,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimeText()
     {
-        $form = $this->factory->createNamed('time', 'name', '04:05:06', array(
+        $form = $this->factory->createNamed('name', 'time', '04:05:06', array(
             'input' => 'string',
             'widget' => 'text',
         ));
@@ -1579,14 +1578,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimeSingleText()
     {
-        $form = $this->factory->createNamed('time', 'name', '04:05:06', array(
+        $form = $this->factory->createNamed('name', 'time', '04:05:06', array(
             'input' => 'string',
             'widget' => 'single_text',
         ));
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
-    [@type="text"]
+    [@type="time"]
     [@name="name"]
     [@value="04:05"]
 '
@@ -1595,7 +1594,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimeWithEmptyValueGlobal()
     {
-        $form = $this->factory->createNamed('time', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'time', null, array(
             'input' => 'string',
             'empty_value' => 'Change&Me',
             'required' => false,
@@ -1620,7 +1619,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimeWithEmptyValueOnYear()
     {
-        $form = $this->factory->createNamed('time', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'time', null, array(
             'input' => 'string',
             'required' => false,
             'empty_value' => array('hour' => 'Change&Me'),
@@ -1656,7 +1655,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimezone()
     {
-        $form = $this->factory->createNamed('timezone', 'name', 'Europe/Vienna');
+        $form = $this->factory->createNamed('name', 'timezone', 'Europe/Vienna');
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/select
@@ -1674,7 +1673,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testTimezoneWithEmptyValue()
     {
-        $form = $this->factory->createNamed('timezone', 'name', null, array(
+        $form = $this->factory->createNamed('name', 'timezone', null, array(
             'empty_value' => 'Select&Timezone',
             'required' => false,
         ));
@@ -1691,7 +1690,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
     public function testUrl()
     {
         $url = 'http://www.google.com?foo1=bar1&foo2=bar2';
-        $form = $this->factory->createNamed('url', 'name', $url);
+        $form = $this->factory->createNamed('name', 'url', $url);
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
@@ -1704,7 +1703,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testCollectionPrototype()
     {
-        $form = $this->factory->createNamedBuilder('form', 'name', array('items' => array('one', 'two', 'three')))
+        $form = $this->factory->createNamedBuilder('name', 'form', array('items' => array('one', 'two', 'three')))
             ->add('items', 'collection', array('allow_add' => true))
             ->getForm()
             ->createView();
@@ -1722,7 +1721,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testEmptyRootFormName()
     {
-        $form = $this->factory->createNamedBuilder('form', '', '')
+        $form = $this->factory->createNamedBuilder('', 'form', '')
             ->add('child', 'text')
             ->getForm();
 

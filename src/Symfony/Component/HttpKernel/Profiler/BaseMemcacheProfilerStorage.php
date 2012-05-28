@@ -185,8 +185,8 @@ abstract class BaseMemcacheProfilerStorage implements ProfilerStorageInterface
      * Store an item on the memcache server under the specified key
      *
      * @param string $key
-     * @param mixed $value
-     * @param int $expiration
+     * @param mixed  $value
+     * @param int    $expiration
      *
      * @return boolean
      */
@@ -205,7 +205,7 @@ abstract class BaseMemcacheProfilerStorage implements ProfilerStorageInterface
      * Append data to an existing item on the memcache server
      * @param string $key
      * @param string $value
-     * @param int $expiration
+     * @param int    $expiration
      *
      * @return boolean
      */

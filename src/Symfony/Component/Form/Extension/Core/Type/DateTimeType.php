@@ -13,22 +13,23 @@ namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\FormBuilder;
-use Symfony\Component\Form\FormView;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormViewInterface;
 use Symfony\Component\Form\ReversedTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DataTransformerChain;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToArrayTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToStringTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToTimestampTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\ArrayToPartsTransformer;
-use Symfony\Component\Form\Options;
+use Symfony\Component\OptionsResolver\Options;
+use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 class DateTimeType extends AbstractType
 {
     /**
      * {@inheritdoc}
      */
-    public function buildForm(FormBuilder $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $parts = array('year', 'month', 'day', 'hour', 'minute');
         $timeParts = array('hour', 'minute');
@@ -42,7 +43,7 @@ class DateTimeType extends AbstractType
         }
 
         if ('single_text' === $options['widget']) {
-            $builder->appendClientTransformer(new DateTimeToStringTransformer($options['data_timezone'], $options['user_timezone'], $format));
+            $builder->addViewTransformer(new DateTimeToStringTransformer($options['data_timezone'], $options['user_timezone'], $format));
         } else {
             // Only pass a subset of the options to children
             $dateOptions = array_intersect_key($options, array_flip(array(
@@ -51,8 +52,6 @@ class DateTimeType extends AbstractType
                 'days',
                 'empty_value',
                 'required',
-                'invalid_message',
-                'invalid_message_parameters',
                 'translation_domain',
             )));
             $timeOptions = array_intersect_key($options, array_flip(array(
@@ -62,8 +61,6 @@ class DateTimeType extends AbstractType
                 'with_seconds',
                 'empty_value',
                 'required',
-                'invalid_message',
-                'invalid_message_parameters',
                 'translation_domain',
             )));
 
@@ -89,7 +86,7 @@ class DateTimeType extends AbstractType
             $timeOptions['input'] = 'array';
 
             $builder
-                ->appendClientTransformer(new DataTransformerChain(array(
+                ->addViewTransformer(new DataTransformerChain(array(
                     new DateTimeToArrayTransformer($options['data_timezone'], $options['user_timezone'], $parts),
                     new ArrayToPartsTransformer(array(
                         'date' => array('year', 'month', 'day'),
@@ -102,40 +99,42 @@ class DateTimeType extends AbstractType
         }
 
         if ('string' === $options['input']) {
-            $builder->appendNormTransformer(new ReversedTransformer(
+            $builder->addModelTransformer(new ReversedTransformer(
                 new DateTimeToStringTransformer($options['data_timezone'], $options['data_timezone'])
             ));
         } elseif ('timestamp' === $options['input']) {
-            $builder->appendNormTransformer(new ReversedTransformer(
+            $builder->addModelTransformer(new ReversedTransformer(
                 new DateTimeToTimestampTransformer($options['data_timezone'], $options['data_timezone'])
             ));
         } elseif ('array' === $options['input']) {
-            $builder->appendNormTransformer(new ReversedTransformer(
+            $builder->addModelTransformer(new ReversedTransformer(
                 new DateTimeToArrayTransformer($options['data_timezone'], $options['data_timezone'], $parts)
             ));
         }
-
-        $builder->setAttribute('widget', $options['widget']);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildView(FormView $view, FormInterface $form)
+    public function buildView(FormViewInterface $view, FormInterface $form, array $options)
     {
-        $view->set('widget', $form->getAttribute('widget'));
+        $view->setVar('widget', $options['widget']);
+
+        if ('single_text' === $options['widget']) {
+            $view->setVar('type', 'datetime');
+        }
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getDefaultOptions()
+    public function setDefaultOptions(OptionsResolverInterface $resolver)
     {
-        $singleControl = function (Options $options) {
-            return $options['widget'] === 'single_text';
+        $compound = function (Options $options) {
+            return $options['widget'] !== 'single_text';
         };
 
-        return array(
+        $resolver->setDefaults(array(
             'input'         => 'datetime',
             'data_timezone' => null,
             'user_timezone' => null,
@@ -163,16 +162,10 @@ class DateTimeType extends AbstractType
             // representation is not \DateTime, but an array, we need to unset
             // this option.
             'data_class'    => null,
-            'single_control'     => $singleControl,
-        );
-    }
+            'compound'      => $compound,
+        ));
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getAllowedOptionValues()
-    {
-        return array(
+        $resolver->setAllowedValues(array(
             'input'       => array(
                 'datetime',
                 'string',
@@ -198,13 +191,13 @@ class DateTimeType extends AbstractType
                 'text',
                 'choice',
             ),
-        );
+        ));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getParent(array $options)
+    public function getParent()
     {
         return 'field';
     }
