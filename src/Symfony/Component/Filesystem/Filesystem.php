@@ -67,6 +67,24 @@ class Filesystem
     }
 
     /**
+     * Checks the existence of files or directories.
+     *
+     * @param string|array|\Traversable $files A filename, an array of files, or a \Traversable instance to check
+     *
+     * @return Boolean true if the file exists, false otherwise
+     */
+    public function exists($files)
+    {
+        foreach ($this->toIterator($files) as $file) {
+            if (!file_exists($file)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Creates empty files.
      *
      * @param string|array|\Traversable $files A filename, an array of files, or a \Traversable instance to create
@@ -97,7 +115,12 @@ class Filesystem
 
                 rmdir($file);
             } else {
-                unlink($file);
+                // https://bugs.php.net/bug.php?id=52176
+                if (defined('PHP_WINDOWS_VERSION_MAJOR') && is_dir($file)) {
+                    rmdir($file);
+                } else {
+                    unlink($file);
+                }
             }
         }
     }
@@ -226,13 +249,8 @@ class Filesystem
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($originDir, $flags), \RecursiveIteratorIterator::SELF_FIRST);
         }
 
-        if ('/' === substr($targetDir, -1) || '\\' === substr($targetDir, -1)) {
-            $targetDir = substr($targetDir, 0, -1);
-        }
-
-        if ('/' === substr($originDir, -1) || '\\' === substr($originDir, -1)) {
-            $originDir = substr($originDir, 0, -1);
-        }
+        $targetDir = rtrim($targetDir, '/\\');
+        $originDir = rtrim($originDir, '/\\');
 
         foreach ($iterator as $file) {
             $target = str_replace($originDir, $targetDir, $file->getPathname());
@@ -258,10 +276,10 @@ class Filesystem
      */
     public function isAbsolutePath($file)
     {
-        if ($file[0] == '/' || $file[0] == '\\'
+        if (strspn($file, '/\\', 0, 1)
             || (strlen($file) > 3 && ctype_alpha($file[0])
-                && $file[1] == ':'
-                && ($file[2] == '\\' || $file[2] == '/')
+                && substr($file, 1, 1) === ':'
+                && (strspn($file, '/\\', 2, 1))
             )
             || null !== parse_url($file, PHP_URL_SCHEME)
         ) {

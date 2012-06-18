@@ -15,7 +15,7 @@
 
 ### Doctrine
 
-    The DoctrineBundle is moved from the Symfony repository to the Doctrine repository.
+  * The DoctrineBundle is moved from the Symfony repository to the Doctrine repository.
     Therefore you should change the namespace of this bundle in your AppKernel.php:
 
     Before: `new Symfony\Bundle\DoctrineBundle\DoctrineBundle()`
@@ -143,6 +143,22 @@
   * `MutableAclInterface::setParentAcl` now accepts `null`, review any
     implementations of this interface to reflect this change.
 
+  * The `UserPassword` constraint has moved from the Security Bundle to the Security Component:
+    
+     Before:
+
+     ```
+     use Symfony\Bundle\SecurityBundle\Validator\Constraint\UserPassword;
+     use Symfony\Bundle\SecurityBundle\Validator\Constraint as SecurityAssert;
+     ```
+     
+     After:
+     
+     ```
+     use Symfony\Component\Security\Core\Validator\Constraint\UserPassword;
+     use Symfony\Component\Security\Core\Validator\Constraint as SecurityAssert;
+     ```
+
 ### Form
 
 #### BC Breaks in Form Types and Options
@@ -234,8 +250,6 @@
         ));
     }
     ```
-
-    The new method `setDefaultOptions` is described in the section "Deprecations".
 
   * The mapping of property paths to arrays has changed.
 
@@ -628,12 +642,12 @@
   * The following methods in `FormBuilder` were deprecated and have a new
     equivalent:
 
-      * `prependClientTransformer`: `addViewTransformer`
-      * `appendClientTransformer`: no new equivalent, consider using `addViewTransformer`
+      * `prependClientTransformer`: `addViewTransformer`, with `true` as second argument
+      * `appendClientTransformer`: `addViewTransformer`
       * `getClientTransformers`: `getViewTransformers`
       * `resetClientTransformers`: `resetViewTransformers`
-      * `prependNormTransformer`: no new equivalent, consider using `addModelTransformer`
-      * `appendNormTransformer`: `addModelTransformer`
+      * `prependNormTransformer`: `addModelTransformer`
+      * `appendNormTransformer`: `addModelTransformer`, with `true` as second argument
       * `getNormTransformers`: `getModelTransformers`
       * `resetNormTransformers`: `resetModelTransformers`
 
@@ -643,7 +657,7 @@
     Before:
 
     ```
-    $builder->prependClientTransformer(new MyTransformer());
+    $builder->appendClientTransformer(new MyTransformer());
     ```
 
     After:

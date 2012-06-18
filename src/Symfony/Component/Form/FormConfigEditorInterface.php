@@ -52,29 +52,41 @@ interface FormConfigEditorInterface extends FormConfigInterface
     function addValidator(FormValidatorInterface $validator);
 
     /**
-     * Appends a transformer to the client transformer chain
+     * Appends / prepends a transformer to the view transformer chain.
+     *
+     * The transform method of the transformer is used to convert data from the
+     * normalized to the view format.
+     * The reverseTransform method of the transformer is used to convert from the
+     * view to the normalized format.
      *
      * @param DataTransformerInterface $viewTransformer
+     * @param Boolean                  $forcePrepend if set to true, prepend instead of appending
      *
      * @return self The configuration object.
      */
-    function addViewTransformer(DataTransformerInterface $viewTransformer);
+    function addViewTransformer(DataTransformerInterface $viewTransformer, $forcePrepend = false);
 
     /**
-     * Clears the client transformers.
+     * Clears the view transformers.
      *
      * @return self The configuration object.
      */
     function resetViewTransformers();
 
     /**
-     * Prepends a transformer to the normalization transformer chain
+     * Prepends / appends a transformer to the normalization transformer chain.
+     *
+     * The transform method of the transformer is used to convert data from the
+     * model to the normalized format.
+     * The reverseTransform method of the transformer is used to convert from the
+     * normalized to the model format.
      *
      * @param DataTransformerInterface $modelTransformer
+     * @param Boolean                  $forceAppend if set to true, append instead of prepending
      *
      * @return self The configuration object.
      */
-    function addModelTransformer(DataTransformerInterface $modelTransformer);
+    function addModelTransformer(DataTransformerInterface $modelTransformer, $forceAppend = false);
 
     /**
      * Clears the normalization transformers.
@@ -172,7 +184,7 @@ interface FormConfigEditorInterface extends FormConfigInterface
      * Sets whether the form's data should be modified by reference.
      *
      * @param  Boolean $byReference Whether the data should be
-    modified by reference.
+     * modified by reference.
      *
      * @return self The configuration object.
      */

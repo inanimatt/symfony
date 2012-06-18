@@ -22,15 +22,13 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 /**
  * Form represents a form.
  *
- * A form is composed of a validator schema and a widget form schema.
- *
  * To implement your own form fields, you need to have a thorough understanding
- * of the data flow within a form field. A form field stores its data in three
- * different representations:
+ * of the data flow within a form. A form stores its data in three different
+ * representations:
  *
- *   (1) the format required by the form's object
- *   (2) a normalized format for internal processing
- *   (3) the format used for display
+ *   (1) the "model" format required by the form's object
+ *   (2) the "normalized" format for internal processing
+ *   (3) the "view" format used for display
  *
  * A date field, for example, may store a date as "Y-m-d" string (1) in the
  * object. To facilitate processing in the field, this value is normalized
@@ -38,18 +36,21 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  * localized string (3) is presented to and modified by the user.
  *
  * In most cases, format (1) and format (2) will be the same. For example,
- * a checkbox field uses a Boolean value both for internal processing as for
+ * a checkbox field uses a Boolean value for both internal processing and
  * storage in the object. In these cases you simply need to set a value
  * transformer to convert between formats (2) and (3). You can do this by
- * calling appendClientTransformer().
+ * calling addViewTransformer().
  *
  * In some cases though it makes sense to make format (1) configurable. To
  * demonstrate this, let's extend our above date field to store the value
  * either as "Y-m-d" string or as timestamp. Internally we still want to
  * use a DateTime object for processing. To convert the data from string/integer
  * to DateTime you can set a normalization transformer by calling
- * appendNormTransformer(). The normalized data is then
- * converted to the displayed data as described before.
+ * addNormTransformer(). The normalized data is then converted to the displayed
+ * data as described before.
+ *
+ * The conversions (1) -> (2) -> (3) use the transform methods of the transformers.
+ * The conversions (3) -> (2) -> (1) use the reverseTransform methods of the transformers.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Bernhard Schussek <bschussek@gmail.com>
@@ -347,25 +348,27 @@ class Form implements \IteratorAggregate, FormInterface
         if (!empty($viewData)) {
             $dataClass = $this->config->getDataClass();
 
+            $actualType = is_object($viewData) ? 'an instance of class ' . get_class($viewData) : ' a(n) ' . gettype($viewData);
+
             if (null === $dataClass && is_object($viewData) && !$viewData instanceof \ArrayAccess) {
                 $expectedType = 'scalar, array or an instance of \ArrayAccess';
 
                 throw new FormException(
                     'The form\'s view data is expected to be of type ' . $expectedType . ', ' .
-                    'but is an instance of class ' . get_class($viewData) . '. You ' .
+                    'but is ' . $actualType . '. You ' .
                     'can avoid this error by setting the "data_class" option to ' .
                     '"' . get_class($viewData) . '" or by adding a view transformer ' .
-                    'that transforms ' . get_class($viewData) . ' to ' . $expectedType . '.'
+                    'that transforms ' . $actualType . ' to ' . $expectedType . '.'
                 );
             }
 
             if (null !== $dataClass && !$viewData instanceof $dataClass) {
                 throw new FormException(
                     'The form\'s view data is expected to be an instance of class ' .
-                    $dataClass . ', but has the type ' . gettype($viewData) . '. You ' .
-                    'can avoid this error by setting the "data_class" option to ' .
-                    'null or by adding a view transformer that transforms ' .
-                    gettype($viewData) . ' to ' . $dataClass . '.'
+                    $dataClass . ', but is '. $actualType . '. You can avoid this error ' .
+                    'by setting the "data_class" option to null or by adding a view ' .
+                    'transformer that transforms ' . $actualType . ' to an instance of ' .
+                    $dataClass . '.'
                 );
             }
         }

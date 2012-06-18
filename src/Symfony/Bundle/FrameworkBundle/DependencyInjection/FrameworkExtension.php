@@ -255,11 +255,12 @@ class FrameworkExtension extends Extension
         $container->setParameter('router.resource', $config['resource']);
         $router = $container->findDefinition('router.default');
 
+        $argument = $router->getArgument(2);
+        $argument['strict_parameters'] = $config['strict_parameters'];
         if (isset($config['type'])) {
-            $argument = $router->getArgument(2);
             $argument['resource_type'] = $config['type'];
-            $router->replaceArgument(2, $argument);
         }
+        $router->replaceArgument(2, $argument);
 
         $container->setParameter('request_listener.http_port', $config['http_port']);
         $container->setParameter('request_listener.https_port', $config['https_port']);
@@ -320,9 +321,9 @@ class FrameworkExtension extends Extension
             'Symfony\\Bundle\\FrameworkBundle\\EventListener\\SessionListener',
             'Symfony\\Component\\HttpFoundation\\Session\\Storage\\SessionStorageInterface',
             'Symfony\\Component\\HttpFoundation\\Session\\Storage\\NativeSessionStorage',
-            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Handler\NativeSessionHandler',
-            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Proxy\AbstractProxy',
-            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Proxy\SessionHandlerProxy',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Handler\\FileSessionHandler',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Proxy\\AbstractProxy',
+            'Symfony\\Component\\HttpFoundation\\Session\\Storage\\Proxy\\SessionHandlerProxy',
             $container->getDefinition('session')->getClass(),
         ));
 
@@ -529,6 +530,16 @@ class FrameworkExtension extends Extension
 
             // Discover translation directories
             $dirs = array();
+            if (class_exists('Symfony\Component\Validator\Validator')) {
+                $r = new \ReflectionClass('Symfony\Component\Validator\Validator');
+
+                $dirs[] = dirname($r->getFilename()).'/Resources/translations';
+            }
+            if (class_exists('Symfony\Component\Form\Form')) {
+                $r = new \ReflectionClass('Symfony\Component\Form\Form');
+
+                $dirs[] = dirname($r->getFilename()).'/Resources/translations';
+            }
             $overridePath = $container->getParameter('kernel.root_dir').'/Resources/%s/translations';
             foreach ($container->getParameter('kernel.bundles') as $bundle => $class) {
                 $reflection = new \ReflectionClass($class);
