@@ -15,9 +15,9 @@ use Symfony\Component\Finder\Finder;
 
 class FinderTest extends Iterator\RealIteratorTestCase
 {
-    static protected $tmpDir;
+    protected static $tmpDir;
 
-    static public function setUpBeforeClass()
+    public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
 
@@ -171,7 +171,6 @@ class FinderTest extends Iterator\RealIteratorTestCase
         $this->assertSame($finder, $finder->sortByType());
         $this->assertIterator($this->toAbsolute(array('foo', 'toto', 'foo/bar.tmp', 'test.php', 'test.py')), $finder->in(self::$tmpDir)->getIterator());
     }
-
 
     public function testSortByAccessedTime()
     {
@@ -441,4 +440,23 @@ class FinderTest extends Iterator\RealIteratorTestCase
         $this->assertIterator(array(), $finder);
     }
 
+    /**
+     * Searching in multiple locations involves AppendIterator which does an unnecessary rewind which leaves FilterIterator
+     * with inner FilesystemIterator in an ivalid state.
+     *
+     * @see https://bugs.php.net/bug.php?id=49104
+     */
+    public function testMultipleLocations()
+    {
+        $locations = array(
+            self::$tmpDir.'/',
+            self::$tmpDir.'/toto/',
+        );
+
+        // it is expected that there are test.py test.php in the tmpDir
+        $finder = new Finder();
+        $finder->in($locations)->depth('< 1')->name('test.php');
+
+        $this->assertEquals(1, count($finder));
+    }
 }

@@ -12,14 +12,15 @@
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\Extension\Core\View\ChoiceView;
+use Symfony\Component\Form\FormError;
 
 class TimeTypeTest extends LocalizedTestCase
 {
     public function testSubmit_dateTime()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'datetime',
         ));
 
@@ -39,8 +40,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_string()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'string',
         ));
 
@@ -58,8 +59,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_timestamp()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'timestamp',
         ));
 
@@ -79,8 +80,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_array()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'array',
         ));
 
@@ -98,8 +99,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_datetimeSingleText()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'datetime',
             'widget' => 'single_text',
         ));
@@ -113,8 +114,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_arraySingleText()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'array',
             'widget' => 'single_text',
         ));
@@ -133,8 +134,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_arraySingleTextWithSeconds()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'array',
             'widget' => 'single_text',
             'with_seconds' => true,
@@ -155,8 +156,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSubmit_stringSingleText()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'string',
             'widget' => 'single_text',
         ));
@@ -170,8 +171,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSetData_withSeconds()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'UTC',
-            'user_timezone' => 'UTC',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
             'input' => 'datetime',
             'with_seconds' => true,
         ));
@@ -184,8 +185,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSetData_differentTimezones()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'America/New_York',
-            'user_timezone' => 'Asia/Hong_Kong',
+            'model_timezone' => 'America/New_York',
+            'view_timezone' => 'Asia/Hong_Kong',
             'input' => 'string',
             'with_seconds' => true,
         ));
@@ -199,9 +200,9 @@ class TimeTypeTest extends LocalizedTestCase
         $outputTime->setTimezone(new \DateTimeZone('Asia/Hong_Kong'));
 
         $displayedData = array(
-            'hour' => (int)$outputTime->format('H'),
-            'minute' => (int)$outputTime->format('i'),
-            'second' => (int)$outputTime->format('s')
+            'hour' => (int) $outputTime->format('H'),
+            'minute' => (int) $outputTime->format('i'),
+            'second' => (int) $outputTime->format('s')
         );
 
         $this->assertEquals($displayedData, $form->getViewData());
@@ -210,8 +211,8 @@ class TimeTypeTest extends LocalizedTestCase
     public function testSetData_differentTimezonesDateTime()
     {
         $form = $this->factory->create('time', null, array(
-            'data_timezone' => 'America/New_York',
-            'user_timezone' => 'Asia/Hong_Kong',
+            'model_timezone' => 'America/New_York',
+            'view_timezone' => 'Asia/Hong_Kong',
             'input' => 'datetime',
             'with_seconds' => true,
         ));
@@ -225,9 +226,9 @@ class TimeTypeTest extends LocalizedTestCase
         $outputTime->setTimezone(new \DateTimeZone('Asia/Hong_Kong'));
 
         $displayedData = array(
-            'hour' => (int)$outputTime->format('H'),
-            'minute' => (int)$outputTime->format('i'),
-            'second' => (int)$outputTime->format('s')
+            'hour' => (int) $outputTime->format('H'),
+            'minute' => (int) $outputTime->format('i'),
+            'second' => (int) $outputTime->format('s')
         );
 
         $this->assertDateTimeEquals($dateTime, $form->getData());
@@ -243,9 +244,9 @@ class TimeTypeTest extends LocalizedTestCase
         $view = $form->createView();
 
         $this->assertEquals(array(
-            new ChoiceView('6', '06'),
-            new ChoiceView('7', '07'),
-        ), $view->get('hour')->getVar('choices'));
+            new ChoiceView('6', '6', '06'),
+            new ChoiceView('7', '7', '07'),
+        ), $view['hour']->vars['choices']);
     }
 
     public function testIsMinuteWithinRange_returnsTrueIfWithin()
@@ -257,9 +258,9 @@ class TimeTypeTest extends LocalizedTestCase
         $view = $form->createView();
 
         $this->assertEquals(array(
-            new ChoiceView('6', '06'),
-            new ChoiceView('7', '07'),
-        ), $view->get('minute')->getVar('choices'));
+            new ChoiceView('6', '6', '06'),
+            new ChoiceView('7', '7', '07'),
+        ), $view['minute']->vars['choices']);
     }
 
     public function testIsSecondWithinRange_returnsTrueIfWithin()
@@ -272,9 +273,9 @@ class TimeTypeTest extends LocalizedTestCase
         $view = $form->createView();
 
         $this->assertEquals(array(
-            new ChoiceView('6', '06'),
-            new ChoiceView('7', '07'),
-        ), $view->get('second')->getVar('choices'));
+            new ChoiceView('6', '6', '06'),
+            new ChoiceView('7', '7', '07'),
+        ), $view['second']->vars['choices']);
     }
 
     public function testIsPartiallyFilled_returnsFalseIfCompletelyEmpty()
@@ -402,7 +403,7 @@ class TimeTypeTest extends LocalizedTestCase
     // Bug fix
     public function testInitializeWithDateTime()
     {
-        // Throws an exception if "data_class" option is not explicitely set
+        // Throws an exception if "data_class" option is not explicitly set
         // to null in the type
         $this->factory->create('time', new \DateTime());
     }
@@ -414,6 +415,150 @@ class TimeTypeTest extends LocalizedTestCase
         ));
 
         $view = $form->createView();
-        $this->assertEquals('time', $view->getVar('type'));
+        $this->assertEquals('time', $view->vars['type']);
+    }
+
+    public function testPassDefaultEmptyValueToViewIfNotRequired()
+    {
+        $form = $this->factory->create('time', null, array(
+            'required' => false,
+            'with_seconds' => true,
+        ));
+
+        $view = $form->createView();
+        $this->assertSame('', $view['hour']->vars['empty_value']);
+        $this->assertSame('', $view['minute']->vars['empty_value']);
+        $this->assertSame('', $view['second']->vars['empty_value']);
+    }
+
+    public function testPassNoEmptyValueToViewIfRequired()
+    {
+        $form = $this->factory->create('time', null, array(
+            'required' => true,
+            'with_seconds' => true,
+        ));
+
+        $view = $form->createView();
+        $this->assertNull($view['hour']->vars['empty_value']);
+        $this->assertNull($view['minute']->vars['empty_value']);
+        $this->assertNull($view['second']->vars['empty_value']);
+    }
+
+    public function testPassEmptyValueAsString()
+    {
+        $form = $this->factory->create('time', null, array(
+            'empty_value' => 'Empty',
+            'with_seconds' => true,
+        ));
+
+        $view = $form->createView();
+        $this->assertSame('Empty', $view['hour']->vars['empty_value']);
+        $this->assertSame('Empty', $view['minute']->vars['empty_value']);
+        $this->assertSame('Empty', $view['second']->vars['empty_value']);
+    }
+
+    public function testPassEmptyValueAsArray()
+    {
+        $form = $this->factory->create('time', null, array(
+            'empty_value' => array(
+                'hour' => 'Empty hour',
+                'minute' => 'Empty minute',
+                'second' => 'Empty second',
+            ),
+            'with_seconds' => true,
+        ));
+
+        $view = $form->createView();
+        $this->assertSame('Empty hour', $view['hour']->vars['empty_value']);
+        $this->assertSame('Empty minute', $view['minute']->vars['empty_value']);
+        $this->assertSame('Empty second', $view['second']->vars['empty_value']);
+    }
+
+    public function testPassEmptyValueAsPartialArray_addEmptyIfNotRequired()
+    {
+        $form = $this->factory->create('time', null, array(
+            'required' => false,
+            'empty_value' => array(
+                'hour' => 'Empty hour',
+                'second' => 'Empty second',
+            ),
+            'with_seconds' => true,
+        ));
+
+        $view = $form->createView();
+        $this->assertSame('Empty hour', $view['hour']->vars['empty_value']);
+        $this->assertSame('', $view['minute']->vars['empty_value']);
+        $this->assertSame('Empty second', $view['second']->vars['empty_value']);
+    }
+
+    public function testPassEmptyValueAsPartialArray_addNullIfRequired()
+    {
+        $form = $this->factory->create('time', null, array(
+            'required' => true,
+            'empty_value' => array(
+                'hour' => 'Empty hour',
+                'second' => 'Empty second',
+            ),
+            'with_seconds' => true,
+        ));
+
+        $view = $form->createView();
+        $this->assertSame('Empty hour', $view['hour']->vars['empty_value']);
+        $this->assertNull($view['minute']->vars['empty_value']);
+        $this->assertSame('Empty second', $view['second']->vars['empty_value']);
+    }
+
+    public function provideCompoundWidgets()
+    {
+        return array(
+            array('text'),
+            array('choice'),
+        );
+    }
+
+    /**
+     * @dataProvider provideCompoundWidgets
+     */
+    public function testHourErrorsBubbleUp($widget)
+    {
+        $error = new FormError('Invalid!');
+        $form = $this->factory->create('time', null, array(
+            'widget' => $widget,
+        ));
+        $form['hour']->addError($error);
+
+        $this->assertSame(array(), $form['hour']->getErrors());
+        $this->assertSame(array($error), $form->getErrors());
+    }
+
+    /**
+     * @dataProvider provideCompoundWidgets
+     */
+    public function testMinuteErrorsBubbleUp($widget)
+    {
+        $error = new FormError('Invalid!');
+        $form = $this->factory->create('time', null, array(
+            'widget' => $widget,
+        ));
+        $form['minute']->addError($error);
+
+        $this->assertSame(array(), $form['minute']->getErrors());
+        $this->assertSame(array($error), $form->getErrors());
+    }
+
+    /**
+     * @dataProvider provideCompoundWidgets
+     */
+    public function testSecondErrorsBubbleUp($widget)
+    {
+        $error = new FormError('Invalid!');
+        $form = $this->factory->create('time', null, array(
+            'widget' => $widget,
+            'with_seconds' => true,
+        ));
+        $form['second']->addError($error);
+
+        $this->assertSame(array(), $form['second']->getErrors());
+        $this->assertSame(array($error), $form->getErrors());
     }
 }

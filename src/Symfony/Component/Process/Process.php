@@ -39,6 +39,7 @@ class Process
     private $timeout;
     private $options;
     private $exitcode;
+    private $fallbackExitcode;
     private $processInformation;
     private $stdout;
     private $stderr;
@@ -57,7 +58,7 @@ class Process
      *
      * @var array
      */
-    static public $exitCodes = array(
+    public static $exitCodes = array(
         0 => 'OK',
         1 => 'General error',
         2 => 'Misuse of shell builtins',
@@ -131,7 +132,7 @@ class Process
             $this->env = null;
         }
         $this->stdin = $stdin;
-        $this->timeout = $timeout;
+        $this->setTimeout($timeout);
         $this->enhanceWindowsCompatibility = true;
         $this->options = array_replace(array('suppress_errors' => true, 'binary_pipes' => true), $options);
     }
@@ -152,8 +153,8 @@ class Process
      * The STDOUT and STDERR are also available after the process is finished
      * via the getOutput() and getErrorOutput() methods.
      *
-     * @param Closure|string|array $callback A PHP callback to run whenever there is some
-     *                                       output available on STDOUT or STDERR
+     * @param callable $callback A PHP callback to run whenever there is some
+     *                           output available on STDOUT or STDERR
      *
      * @return integer The exit status code
      *
@@ -180,11 +181,11 @@ class Process
      * the output in real-time while writing the standard input to the process.
      * It allows to have feedback from the independent process during execution.
      * If there is no callback passed, the wait() method can be called
-     * with true as a second parameter then the callback will get all data occured
+     * with true as a second parameter then the callback will get all data occurred
      * in (and since) the start call.
      *
-     * @param Closure|string|array $callback A PHP callback to run whenever there is some
-     *                                       output available on STDOUT or STDERR
+     * @param callable $callback A PHP callback to run whenever there is some
+     *                           output available on STDOUT or STDERR
      *
      * @throws \RuntimeException When process can't be launch or is stopped
      * @throws \RuntimeException When process is already running
@@ -211,7 +212,13 @@ class Process
             );
             $descriptors = array(array('pipe', 'r'), $this->fileHandles[self::STDOUT], array('pipe', 'w'));
         } else {
-            $descriptors = array(array('pipe', 'r'), array('pipe', 'w'), array('pipe', 'w'));
+            $descriptors = array(
+                array('pipe', 'r'), // stdin
+                array('pipe', 'w'), // stdout
+                array('pipe', 'w'), // stderr
+                array('pipe', 'w')  // last exit code is output on the fourth pipe and caught to work around --enable-sigchild
+            );
+            $this->commandline = '('.$this->commandline.') 3>/dev/null; code=$?; echo $code >&3; exit $code';
         }
 
         $commandline = $this->commandline;
@@ -290,7 +297,7 @@ class Process
             }
         }
 
-        $this->processInformation = proc_get_status($this->process);
+        $this->updateStatus();
     }
 
     /**
@@ -300,7 +307,7 @@ class Process
      * from the output in real-time while writing the standard input to the process.
      * It allows to have feedback from the independent process during execution.
      *
-     * @param mixed $callback A valid PHP callback
+     * @param callable $callback A valid PHP callback
      *
      * @return int The exitcode of the process
      *
@@ -308,7 +315,7 @@ class Process
      */
     public function wait($callback = null)
     {
-        $this->processInformation = proc_get_status($this->process);
+        $this->updateStatus();
         $callback = $this->buildCallback($callback);
         while ($this->pipes || (defined('PHP_WINDOWS_VERSION_BUILD') && $this->fileHandles)) {
             if (defined('PHP_WINDOWS_VERSION_BUILD') && $this->fileHandles) {
@@ -336,8 +343,14 @@ class Process
                 foreach ($r as $pipe) {
                     $type = array_search($pipe, $this->pipes);
                     $data = fread($pipe, 8192);
+
                     if (strlen($data) > 0) {
-                        call_user_func($callback, $type == 1 ? self::OUT : self::ERR, $data);
+                        // last exit code is output and caught to work around --enable-sigchild
+                        if (3 == $type) {
+                            $this->fallbackExitcode = (int) $data;
+                        } else {
+                            call_user_func($callback, $type == 1 ? self::OUT : self::ERR, $data);
+                        }
                     }
                     if (false === $data || feof($pipe)) {
                         fclose($pipe);
@@ -363,7 +376,13 @@ class Process
             throw new \RuntimeException(sprintf('The process stopped because of a "%s" signal.', $this->processInformation['stopsig']));
         }
 
-        return $this->exitcode = $this->processInformation['running'] ? $exitcode : $this->processInformation['exitcode'];
+        $this->exitcode = $this->processInformation['running'] ? $exitcode : $this->processInformation['exitcode'];
+
+        if (-1 == $this->exitcode && null !== $this->fallbackExitcode) {
+            $this->exitcode = $this->fallbackExitcode;
+        }
+
+        return $this->exitcode;
     }
 
     /**
@@ -525,7 +544,7 @@ class Process
      *
      * @param float $timeout The timeout in seconds
      *
-     * @return int The exitcode of the process
+     * @return integer The exitcode of the process
      *
      * @throws \RuntimeException if the process got signaled
      */
@@ -585,8 +604,27 @@ class Process
         return $this->timeout;
     }
 
+    /**
+     * Sets the process timeout.
+     *
+     * To disable the timeout, set this value to null.
+     *
+     * @param integer|null
+     */
     public function setTimeout($timeout)
     {
+        if (null === $timeout) {
+            $this->timeout = null;
+
+            return;
+        }
+
+        $timeout = (integer) $timeout;
+
+        if ($timeout < 0) {
+            throw new \InvalidArgumentException('The timeout value must be a valid positive integer.');
+        }
+
         $this->timeout = $timeout;
     }
 
@@ -643,10 +681,10 @@ class Process
     /**
      * Builds up the callback used by wait().
      *
-     * The callbacks adds all occured output to the specific buffer and calls
-     * the usercallback (if present) with the received output.
+     * The callbacks adds all occurred output to the specific buffer and calls
+     * the user callback (if present) with the received output.
      *
-     * @param mixed $callback The user defined PHP callback
+     * @param callable $callback The user defined PHP callback
      *
      * @return mixed A PHP callable
      */
@@ -708,7 +746,7 @@ class Process
     /**
      * Handles the windows file handles fallbacks
      *
-     * @param mixed $callback A valid PHP callback
+     * @param callable $callback A valid PHP callback
      * @param Boolean $closeEmptyHandles if true, handles that are empty will be assumed closed
      */
     private function processFileHandles($callback, $closeEmptyHandles = false)

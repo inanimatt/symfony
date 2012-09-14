@@ -29,11 +29,13 @@ class RedirectControllerTest extends TestCase
         $controller = new RedirectController();
         $controller->setContainer($container);
 
-        $returnResponse = $controller->redirectAction('');
-
+        $returnResponse = $controller->redirectAction('', true);
         $this->assertInstanceOf('\Symfony\Component\HttpFoundation\Response', $returnResponse);
-
         $this->assertEquals(410, $returnResponse->getStatusCode());
+
+        $returnResponse = $controller->redirectAction('', false);
+        $this->assertInstanceOf('\Symfony\Component\HttpFoundation\Response', $returnResponse);
+        $this->assertEquals(404, $returnResponse->getStatusCode());
     }
 
     /**
@@ -67,7 +69,6 @@ class RedirectControllerTest extends TestCase
             ->will($this->returnValue($url));
 
         $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
-
 
         $container
             ->expects($this->at(0))
@@ -103,11 +104,14 @@ class RedirectControllerTest extends TestCase
     public function testEmptyPath()
     {
         $controller = new RedirectController();
-        $returnResponse = $controller->urlRedirectAction('');
 
+        $returnResponse = $controller->urlRedirectAction('', true);
         $this->assertInstanceOf('\Symfony\Component\HttpFoundation\Response', $returnResponse);
-
         $this->assertEquals(410, $returnResponse->getStatusCode());
+
+        $returnResponse = $controller->urlRedirectAction('', false);
+        $this->assertInstanceOf('\Symfony\Component\HttpFoundation\Response', $returnResponse);
+        $this->assertEquals(404, $returnResponse->getStatusCode());
     }
 
     public function testFullURL()

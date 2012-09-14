@@ -18,12 +18,13 @@
     "require": {
         "php": ">=5.3.3",
         "doctrine/common": ">2.2,<2.4-dev",
-        "twig/twig": ">=1.8,<2.0-dev"
+        "twig/twig": ">=1.9.1,<2.0-dev"
     },
     "replace": {
         "symfony/doctrine-bridge": "self.version",
         "symfony/monolog-bridge": "self.version",
         "symfony/propel1-bridge": "self.version",
+        "symfony/swiftmailer-bridge": "self.version",
         "symfony/twig-bridge": "self.version",
         "symfony/framework-bundle": "self.version",
         "symfony/security-bundle": "self.version",
@@ -55,7 +56,7 @@
     },
     "require-dev": {
         "doctrine/dbal": ">=2.2,<2.4-dev",
-        "doctrine/orm": ">=2.2,<2.4-dev",
+        "doctrine/orm": ">=2.2.3,<2.4-dev",
         "doctrine/data-fixtures": "1.0.*",
         "propel/propel1": "dev-master",
         "monolog/monolog": "dev-master"
@@ -66,9 +67,10 @@
             "SessionHandlerInterface": "src/Symfony/Component/HttpFoundation/Resources/stubs"
         }
     },
+    "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "2.1-dev"
+            "dev-master": "2.2-dev"
         }
     }
 }

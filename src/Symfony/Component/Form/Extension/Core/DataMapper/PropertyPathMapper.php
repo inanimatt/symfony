@@ -23,22 +23,24 @@ class PropertyPathMapper implements DataMapperInterface
      */
     public function mapDataToForms($data, array $forms)
     {
-        if (!empty($data) && !is_array($data) && !is_object($data)) {
-            throw new UnexpectedTypeException($data, 'Object, array or empty');
+        if (null === $data || array() === $data) {
+            return;
         }
 
-        if (!empty($data)) {
-            $iterator = new VirtualFormAwareIterator($forms);
-            $iterator = new \RecursiveIteratorIterator($iterator);
+        if (!is_array($data) && !is_object($data)) {
+            throw new UnexpectedTypeException($data, 'object, array or empty');
+        }
 
-            foreach ($iterator as $form) {
-                /* @var FormInterface $form */
-                $propertyPath = $form->getPropertyPath();
-                $config = $form->getConfig();
+        $iterator = new VirtualFormAwareIterator($forms);
+        $iterator = new \RecursiveIteratorIterator($iterator);
 
-                if (null !== $propertyPath && $config->getMapped()) {
-                    $form->setData($propertyPath->getValue($data));
-                }
+        foreach ($iterator as $form) {
+            /* @var FormInterface $form */
+            $propertyPath = $form->getPropertyPath();
+            $config = $form->getConfig();
+
+            if (null !== $propertyPath && $config->getMapped()) {
+                $form->setData($propertyPath->getValue($data));
             }
         }
     }
@@ -48,6 +50,14 @@ class PropertyPathMapper implements DataMapperInterface
      */
     public function mapFormsToData(array $forms, &$data)
     {
+        if (null === $data) {
+            return;
+        }
+
+        if (!is_array($data) && !is_object($data)) {
+            throw new UnexpectedTypeException($data, 'object, array or empty');
+        }
+
         $iterator = new VirtualFormAwareIterator($forms);
         $iterator = new \RecursiveIteratorIterator($iterator);
 
@@ -61,9 +71,7 @@ class PropertyPathMapper implements DataMapperInterface
             if (null !== $propertyPath && $config->getMapped() && $form->isSynchronized() && !$form->isDisabled()) {
                 // If the data is identical to the value in $data, we are
                 // dealing with a reference
-                $isReference = $form->getData() === $propertyPath->getValue($data);
-
-                if (!is_object($data) || !$isReference || !$config->getByReference()) {
+                if (!is_object($data) || !$config->getByReference() || $form->getData() !== $propertyPath->getValue($data)) {
                     $propertyPath->setValue($data, $form->getData());
                 }
             }

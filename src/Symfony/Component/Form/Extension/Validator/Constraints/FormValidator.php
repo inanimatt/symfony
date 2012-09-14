@@ -53,7 +53,7 @@ class FormValidator extends ConstraintValidator
             // Validate the form data only if transformation succeeded
             $path = $this->context->getPropertyPath();
             $graphWalker = $this->context->getGraphWalker();
-            $groups = $this->getValidationGroups($form);
+            $groups = self::getValidationGroups($form);
 
             if (!empty($path)) {
                 $path .= '.';
@@ -71,7 +71,12 @@ class FormValidator extends ConstraintValidator
             $constraints = $config->getOption('constraints');
             foreach ($constraints as $constraint) {
                 foreach ($groups as $group) {
-                    $graphWalker->walkConstraint($constraint, $form->getData(), $group, $path . 'data');
+                    if (in_array($group, $constraint->groups)) {
+                        $graphWalker->walkConstraint($constraint, $form->getData(), $group, $path . 'data');
+
+                        // Prevent duplicate validation
+                        continue 2;
+                    }
                 }
             }
         } else {
@@ -82,7 +87,7 @@ class FormValidator extends ConstraintValidator
             // Mark the form with an error if it is not synchronized
             $this->context->addViolation(
                 $config->getOption('invalid_message'),
-                array('{{ value }}' => $clientDataAsString),
+                array_replace(array('{{ value }}' => $clientDataAsString), $config->getOption('invalid_message_parameters')),
                 $form->getViewData(),
                 null,
                 Form::ERR_INVALID
@@ -121,7 +126,7 @@ class FormValidator extends ConstraintValidator
      *
      * @return Boolean Whether the graph walker may walk the data.
      */
-    private function allowDataWalking(FormInterface $form)
+    private static function allowDataWalking(FormInterface $form)
     {
         $data = $form->getData();
 
@@ -153,7 +158,7 @@ class FormValidator extends ConstraintValidator
      *
      * @return array The validation groups.
      */
-    private function getValidationGroups(FormInterface $form)
+    private static function getValidationGroups(FormInterface $form)
     {
         do {
             $groups = $form->getConfig()->getOption('validation_groups');

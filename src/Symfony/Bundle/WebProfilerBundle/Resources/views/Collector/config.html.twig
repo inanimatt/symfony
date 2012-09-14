@@ -67,7 +67,7 @@
                 <b>Token</b>
                 <span>
                     {% if profiler_url %}
-                        <a style="color: #2f2f2f" href="{{ profiler_url }}">{{ collector.token }}</a>
+                        <a href="{{ profiler_url }}">{{ collector.token }}</a>
                     {% else %}
                         {{ collector.token }}
                     {% endif %}
@@ -146,19 +146,20 @@
         </tr>
     </table>
 
-    <h2>Active bundles</h2>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Path</th>
-        </tr>
-        {% set bundles = collector.bundles %}
-        {% for name in bundles|keys|sort %}
-        <tr>
-            <th>{{ name }}</th>
-            <td>{{ bundles[name] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-
+    {% if collector.bundles %}
+        <h2>Active bundles</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Path</th>
+            </tr>
+            {% set bundles = collector.bundles %}
+            {% for name in bundles|keys|sort %}
+            <tr>
+                <th>{{ name }}</th>
+                <td>{{ bundles[name] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
 {% endblock %}

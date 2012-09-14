@@ -17,7 +17,7 @@ use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\Extension\Core\CoreExtension;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
 
-abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
+abstract class AbstractLayoutTest extends FormIntegrationTestCase
 {
     protected $csrfProvider;
 
@@ -33,10 +33,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
         $this->csrfProvider = $this->getMock('Symfony\Component\Form\Extension\Csrf\CsrfProvider\CsrfProviderInterface');
 
-        $this->factory = new FormFactory(array(
-            new CoreExtension(),
+        parent::setUp();
+    }
+
+    protected function getExtensions()
+    {
+        return array(
             new CsrfExtension($this->csrfProvider),
-        ));
+        );
     }
 
     protected function tearDown()
@@ -61,7 +65,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             // the top level
             $dom->loadXml('<root>'.$html.'</root>');
         } catch (\Exception $e) {
-            return $this->fail(sprintf(
+            $this->fail(sprintf(
                 "Failed loading HTML:\n\n%s\n\nError: %s",
                 $html,
                 $e->getMessage()
@@ -220,7 +224,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testLabelWithCustomOptionsPassedDirectly()
+    public function testLabelWithCustomAttributesPassedDirectly()
     {
         $form = $this->factory->createNamed('name', 'text');
         $html = $this->renderLabel($form->createView(), null, array(
@@ -237,7 +241,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testLabelWithCustomTextAndCustomOptionsPassedDirectly()
+    public function testLabelWithCustomTextAndCustomAttributesPassedDirectly()
     {
         $form = $this->factory->createNamed('name', 'text');
         $html = $this->renderLabel($form->createView(), 'Custom label', array(
@@ -248,6 +252,27 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
         $this->assertMatchesXpath($html,
 '/label
+    [@for="name"]
+    [@class="my&class required"]
+    [.="[trans]Custom label[/trans]"]
+'
+        );
+    }
+
+    // https://github.com/symfony/symfony/issues/5029
+    public function testLabelWithCustomTextAsOptionAndCustomAttributesPassedDirectly()
+    {
+        $form = $this->factory->createNamed('name', 'text', null, array(
+            'label' => 'Custom label',
+        ));
+        $html = $this->renderLabel($form->createView(), null, array(
+            'label_attr' => array(
+                'class' => 'my&class'
+            ),
+        ));
+
+        $this->assertMatchesXpath($html,
+            '/label
     [@for="name"]
     [@class="my&class required"]
     [.="[trans]Custom label[/trans]"]
@@ -376,7 +401,6 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '
         );
     }
-
 
     public function testSingleChoiceWithPreferredAndNoSeparator()
     {
@@ -787,14 +811,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@id="name_date"]
             [
                 ./select
+                    [@id="name_date_year"]
+                    [./option[@value="2011"][@selected="selected"]]
+                /following-sibling::select
                     [@id="name_date_month"]
                     [./option[@value="2"][@selected="selected"]]
                 /following-sibling::select
                     [@id="name_date_day"]
                     [./option[@value="3"][@selected="selected"]]
-                /following-sibling::select
-                    [@id="name_date_year"]
-                    [./option[@value="2011"][@selected="selected"]]
             ]
         /following-sibling::div
             [@id="name_time"]
@@ -827,13 +851,13 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@id="name_date"]
             [
                 ./select
+                    [@id="name_date_year"]
+                    [./option[@value=""][.="[trans]Change&Me[/trans]"]]
+                /following-sibling::select
                     [@id="name_date_month"]
                     [./option[@value=""][.="[trans]Change&Me[/trans]"]]
                 /following-sibling::select
                     [@id="name_date_day"]
-                    [./option[@value=""][.="[trans]Change&Me[/trans]"]]
-                /following-sibling::select
-                    [@id="name_date_year"]
                     [./option[@value=""][.="[trans]Change&Me[/trans]"]]
             ]
         /following-sibling::div
@@ -867,14 +891,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@id="name_date"]
             [
                 ./select
+                    [@id="name_date_year"]
+                    [./option[@value="2011"][@selected="selected"]]
+                /following-sibling::select
                     [@id="name_date_month"]
                     [./option[@value="2"][@selected="selected"]]
                 /following-sibling::select
                     [@id="name_date_day"]
                     [./option[@value="3"][@selected="selected"]]
-                /following-sibling::select
-                    [@id="name_date_year"]
-                    [./option[@value="2011"][@selected="selected"]]
             ]
         /following-sibling::div
             [@id="name_time"]
@@ -906,14 +930,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@id="name_date"]
             [
                 ./select
+                    [@id="name_date_year"]
+                    [./option[@value="2011"][@selected="selected"]]
+                /following-sibling::select
                     [@id="name_date_month"]
                     [./option[@value="2"][@selected="selected"]]
                 /following-sibling::select
                     [@id="name_date_day"]
                     [./option[@value="3"][@selected="selected"]]
-                /following-sibling::select
-                    [@id="name_date_year"]
-                    [./option[@value="2011"][@selected="selected"]]
             ]
         /following-sibling::div
             [@id="name_time"]
@@ -949,7 +973,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@type="date"]
             [@id="name_date"]
             [@name="name[date]"]
-            [@value="Feb 3, 2011"]
+            [@value="2011-02-03"]
         /following-sibling::input
             [@type="time"]
             [@id="name_time"]
@@ -965,13 +989,15 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
         $form = $this->factory->createNamed('name', 'datetime', '2011-02-03 04:05:06', array(
             'input' => 'string',
             'widget' => 'single_text',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
         ));
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
     [@type="datetime"]
     [@name="name"]
-    [@value="2011-02-03 04:05"]
+    [@value="2011-02-03T04:05:06Z"]
 '
         );
     }
@@ -983,13 +1009,15 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             'date_widget' => 'choice',
             'time_widget' => 'choice',
             'widget' => 'single_text',
+            'model_timezone' => 'UTC',
+            'view_timezone' => 'UTC',
         ));
 
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/input
     [@type="datetime"]
     [@name="name"]
-    [@value="2011-02-03 04:05"]
+    [@value="2011-02-03T04:05:06Z"]
 '
         );
     }
@@ -1005,14 +1033,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./select
+            [@id="name_year"]
+            [./option[@value="2011"][@selected="selected"]]
+        /following-sibling::select
             [@id="name_month"]
             [./option[@value="2"][@selected="selected"]]
         /following-sibling::select
             [@id="name_day"]
             [./option[@value="3"][@selected="selected"]]
-        /following-sibling::select
-            [@id="name_year"]
-            [./option[@value="2011"][@selected="selected"]]
     ]
     [count(./select)=3]
 '
@@ -1032,13 +1060,13 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./select
+            [@id="name_year"]
+            [./option[@value=""][.="[trans]Change&Me[/trans]"]]
+        /following-sibling::select
             [@id="name_month"]
             [./option[@value=""][.="[trans]Change&Me[/trans]"]]
         /following-sibling::select
             [@id="name_day"]
-            [./option[@value=""][.="[trans]Change&Me[/trans]"]]
-        /following-sibling::select
-            [@id="name_year"]
             [./option[@value=""][.="[trans]Change&Me[/trans]"]]
     ]
     [count(./select)=3]
@@ -1059,14 +1087,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./select
+            [@id="name_year"]
+            [./option[@value=""][.="[trans]Change&Me[/trans]"]]
+        /following-sibling::select
             [@id="name_month"]
             [./option[@value="1"]]
         /following-sibling::select
             [@id="name_day"]
             [./option[@value="1"]]
-        /following-sibling::select
-            [@id="name_year"]
-            [./option[@value=""][.="[trans]Change&Me[/trans]"]]
     ]
     [count(./select)=3]
 '
@@ -1084,6 +1112,10 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./input
+            [@id="name_year"]
+            [@type="text"]
+            [@value="2011"]
+        /following-sibling::input
             [@id="name_month"]
             [@type="text"]
             [@value="2"]
@@ -1091,10 +1123,6 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@id="name_day"]
             [@type="text"]
             [@value="3"]
-        /following-sibling::input
-            [@id="name_year"]
-            [@type="text"]
-            [@value="2011"]
     ]
     [count(./input)=3]
 '
@@ -1112,7 +1140,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/input
     [@type="date"]
     [@name="name"]
-    [@value="Feb 3, 2011"]
+    [@value="2011-02-03"]
 '
         );
     }
@@ -1138,14 +1166,14 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./select
+            [@id="name_year"]
+            [./option[@value="2000"][@selected="selected"]]
+        /following-sibling::select
             [@id="name_month"]
             [./option[@value="2"][@selected="selected"]]
         /following-sibling::select
             [@id="name_day"]
             [./option[@value="3"][@selected="selected"]]
-        /following-sibling::select
-            [@id="name_year"]
-            [./option[@value="2000"][@selected="selected"]]
     ]
     [count(./select)=3]
 '
@@ -1164,6 +1192,10 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 '/div
     [
         ./select
+            [@id="name_year"]
+            [./option[@value=""][.="[trans][/trans]"]]
+            [./option[@value="1950"][@selected="selected"]]
+        /following-sibling::select
             [@id="name_month"]
             [./option[@value=""][.="[trans][/trans]"]]
             [./option[@value="1"][@selected="selected"]]
@@ -1171,10 +1203,6 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
             [@id="name_day"]
             [./option[@value=""][.="[trans][/trans]"]]
             [./option[@value="1"][@selected="selected"]]
-        /following-sibling::select
-            [@id="name_year"]
-            [./option[@value=""][.="[trans][/trans]"]]
-            [./option[@value="1950"][@selected="selected"]]
     ]
     [count(./select)=3]
 '
@@ -1721,7 +1749,7 @@ abstract class AbstractLayoutTest extends \PHPUnit_Framework_TestCase
 
     public function testEmptyRootFormName()
     {
-        $form = $this->factory->createNamedBuilder('', 'form', '')
+        $form = $this->factory->createNamedBuilder('', 'form')
             ->add('child', 'text')
             ->getForm();
 

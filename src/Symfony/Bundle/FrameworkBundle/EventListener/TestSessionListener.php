@@ -49,11 +49,9 @@ class TestSessionListener implements EventSubscriberInterface
 
         $session = $this->container->get('session');
         $cookies = $event->getRequest()->cookies;
-        
+
         if ($cookies->has($session->getName())) {
             $session->setId($cookies->get($session->getName()));
-        } else {
-            $session->migrate(false);
         }
     }
 
@@ -78,7 +76,7 @@ class TestSessionListener implements EventSubscriberInterface
         }
     }
 
-    static public function getSubscribedEvents()
+    public static function getSubscribedEvents()
     {
         return array(
             KernelEvents::REQUEST => array('onKernelRequest', 192),

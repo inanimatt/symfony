@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Tests;
 
 use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\Tests\Fixtures\AlternatingRowType;
 
 abstract class AbstractDivLayoutTest extends AbstractLayoutTest
 {
@@ -38,13 +39,17 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
     public function testRowOverrideVariables()
     {
         $view = $this->factory->createNamed('name', 'text')->createView();
-        $html = $this->renderRow($view, array('label' => 'foo&bar'));
+        $html = $this->renderRow($view, array(
+            'attr' => array('class' => 'my&class'),
+            'label' => 'foo&bar',
+            'label_attr' => array('class' => 'my&label&class'),
+        ));
 
         $this->assertMatchesXpath($html,
 '/div
     [
-        ./label[@for="name"][.="[trans]foo&bar[/trans]"]
-        /following-sibling::input[@id="name"]
+        ./label[@for="name"][@class="my&label&class required"][.="[trans]foo&bar[/trans]"]
+        /following-sibling::input[@id="name"][@class="my&class"]
     ]
 '
         );
@@ -57,11 +62,13 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
         $view = $form->createView();
         $html = $this->renderRow($view);
 
+        // The errors of the form are not rendered by intention!
+        // In practice, repeated fields cannot have errors as all errors
+        // on them are mapped to the first child.
+        // (see RepeatedTypeValidatorExtension)
+
         $this->assertMatchesXpath($html,
-'/ul
-    [./li[.="[trans]Error![/trans]"]]
-    [count(./li)=1]
-/following-sibling::div
+'/div
     [
         ./label[@for="name_first"]
         /following-sibling::input[@id="name_first"]
@@ -277,6 +284,29 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
         );
     }
 
+    // https://github.com/symfony/symfony/issues/5038
+    public function testCollectionWithAlternatingRowTypes()
+    {
+        $data = array(
+            array('title' => 'a'),
+            array('title' => 'b'),
+        );
+        $form = $this->factory->createNamed('name', 'collection', $data, array(
+            'type' => new AlternatingRowType(),
+        ));
+
+        $this->assertWidgetMatchesXpath($form->createView(), array(),
+'/div
+    [
+        ./div[./div/div/input[@type="text"][@value="a"]]
+        /following-sibling::div[./div/div/textarea[.="b"]]
+    ]
+    [count(./div[./div/div/input])=1]
+    [count(./div[./div/div/textarea])=1]
+'
+        );
+    }
+
     public function testEmptyCollection()
     {
         $form = $this->factory->createNamed('name', 'collection', array(), array(
@@ -373,7 +403,8 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
         $this->assertWidgetMatchesXpath($form->createView(), array(),
 '/div
     [
-        ./div/div[@id="name_child"][./ul/li[.="[trans]Error![/trans]"]]
+        ./div/label
+        /following-sibling::ul[./li[.="[trans]Error![/trans]"]]
     ]
     [count(.//li[.="[trans]Error![/trans]"])=1]
 '
@@ -434,7 +465,7 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
     public function testRepeatedWithCustomOptions()
     {
         $form = $this->factory->createNamed('name', 'repeated', null, array(
-            // the global required value cannot be overriden
+            // the global required value cannot be overridden
             'first_options'  => array('label' => 'Test', 'required' => false),
             'second_options' => array('label' => 'Test2')
         ));
@@ -542,7 +573,7 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
             ]
         /following-sibling::div
             [
-                ./label
+                ./label[.="child"]
                 /following-sibling::div
                     [
                         ./div
@@ -553,6 +584,27 @@ abstract class AbstractDivLayoutTest extends AbstractLayoutTest
                     ]
             ]
         /following-sibling::input[@type="hidden"]
+    ]
+'
+        );
+    }
+
+    /**
+     * The block "_name_child_label" should be overridden in the theme of the
+     * implemented driver.
+     */
+    public function testCollectionRowWithCustomBlock()
+    {
+        $collection = array('one', 'two', 'three');
+        $form = $this->factory->createNamedBuilder('name', 'collection', $collection)
+            ->getForm();
+
+        $this->assertWidgetMatchesXpath($form->createView(), array(),
+'/div
+    [
+        ./div[./label[.="Custom label: [trans]0[/trans]"]]
+        /following-sibling::div[./label[.="Custom label: [trans]1[/trans]"]]
+        /following-sibling::div[./label[.="Custom label: [trans]2[/trans]"]]
     ]
 '
         );

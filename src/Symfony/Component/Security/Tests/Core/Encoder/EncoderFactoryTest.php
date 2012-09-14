@@ -14,6 +14,7 @@ namespace Symfony\Component\Security\Tests\Core\Encoder;
 use Symfony\Component\Security\Core\Encoder\MessageDigestPasswordEncoder;
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
 use Symfony\Component\Security\Core\User\User;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 class EncoderFactoryTest extends \PHPUnit_Framework_TestCase
 {
@@ -51,11 +52,7 @@ class EncoderFactoryTest extends \PHPUnit_Framework_TestCase
             'Symfony\Component\Security\Core\User\UserInterface' => new MessageDigestPasswordEncoder('sha1'),
         ));
 
-        $encoder = $factory->getEncoder('Symfony\Component\Security\Core\User\UserInterface');
-        $expectedEncoder = new MessageDigestPasswordEncoder('sha1');
-        $this->assertEquals($expectedEncoder->encodePassword('foo', ''), $encoder->encodePassword('foo', ''));
-
-        $encoder = $factory->getEncoder('Symfony\Component\Security\Core\User\User');
+        $encoder = $factory->getEncoder('Symfony\Component\Security\Tests\Core\Encoder\SomeChildUser');
         $expectedEncoder = new MessageDigestPasswordEncoder('sha1');
         $this->assertEquals($expectedEncoder->encodePassword('foo', ''), $encoder->encodePassword('foo', ''));
     }
@@ -74,12 +71,24 @@ class EncoderFactoryTest extends \PHPUnit_Framework_TestCase
     public function testGetEncoderConfiguredForConcreteClassWithClassName()
     {
         $factory = new EncoderFactory(array(
-            'Symfony\Component\Security\Core\User\User' => new MessageDigestPasswordEncoder('sha1'),
+            'Symfony\Component\Security\Tests\Core\Encoder\SomeUser' => new MessageDigestPasswordEncoder('sha1'),
         ));
 
-
-        $encoder = $factory->getEncoder('Symfony\Component\Security\Core\User\User');
+        $encoder = $factory->getEncoder('Symfony\Component\Security\Tests\Core\Encoder\SomeChildUser');
         $expectedEncoder = new MessageDigestPasswordEncoder('sha1');
         $this->assertEquals($expectedEncoder->encodePassword('foo', ''), $encoder->encodePassword('foo', ''));
     }
+}
+
+class SomeUser implements UserInterface
+{
+    public function getRoles() {}
+    public function getPassword() {}
+    public function getSalt() {}
+    public function getUsername() {}
+    public function eraseCredentials() {}
+}
+
+class SomeChildUser extends SomeUser
+{
 }

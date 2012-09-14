@@ -44,7 +44,7 @@ class CsrfValidationListener implements EventSubscriberInterface
      */
     private $intention;
 
-    static public function getSubscribedEvents()
+    public static function getSubscribedEvents()
     {
         return array(
             FormEvents::PRE_BIND => 'preBind',
@@ -65,7 +65,7 @@ class CsrfValidationListener implements EventSubscriberInterface
 
         if ($form->isRoot() && $form->getConfig()->getOption('compound')) {
             if (!isset($data[$this->fieldName]) || !$this->csrfProvider->isCsrfTokenValid($this->intention, $data[$this->fieldName])) {
-                $form->addError(new FormError('The CSRF token is invalid. Please try to resubmit the form'));
+                $form->addError(new FormError('The CSRF token is invalid. Please try to resubmit the form.'));
             }
 
             unset($data[$this->fieldName]);

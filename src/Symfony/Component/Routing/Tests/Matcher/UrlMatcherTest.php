@@ -178,7 +178,7 @@ class UrlMatcherTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('_route' => 'foo', 'foo' => "\n"), $matcher->match('/'.urlencode("\n").'/bar'), 'linefeed character is matched');
     }
 
-    public function testMatchOverridenRoute()
+    public function testMatchOverriddenRoute()
     {
         $collection = new RouteCollection();
         $collection->add('foo', new Route('/foo'));
@@ -212,6 +212,15 @@ class UrlMatcherTest extends \PHPUnit_Framework_TestCase
             $this->fail();
         } catch (ResourceNotFoundException $e) {
         }
+    }
+
+    public function testDefaultRequirementForOptionalVariables()
+    {
+        $coll = new RouteCollection();
+        $coll->add('test', new Route('/{page}.{_format}', array('page' => 'index', '_format' => 'html')));
+
+        $matcher = new UrlMatcher($coll, new RequestContext());
+        $this->assertEquals(array('page' => 'my-page', '_format' => 'xml', '_route' => 'test'), $matcher->match('/my-page.xml'));
     }
 
     public function testMatchingIsEager()

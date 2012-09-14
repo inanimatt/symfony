@@ -496,7 +496,12 @@ class Application
                 }
 
                 if ($alternatives = $this->findAlternativeNamespace($part, $abbrevs)) {
-                    $message .= "\n\nDid you mean one of these?\n    ";
+                    if (1 == count($alternatives)) {
+                        $message .= "\n\nDid you mean this?\n    ";
+                    } else {
+                        $message .= "\n\nDid you mean one of these?\n    ";
+                    }
+
                     $message .= implode("\n    ", $alternatives);
                 }
 
@@ -571,7 +576,11 @@ class Application
             $message = sprintf('Command "%s" is not defined.', $name);
 
             if ($alternatives = $this->findAlternativeCommands($searchName, $abbrevs)) {
-                $message .= "\n\nDid you mean one of these?\n    ";
+                if (1 == count($alternatives)) {
+                    $message .= "\n\nDid you mean this?\n    ";
+                } else {
+                    $message .= "\n\nDid you mean one of these?\n    ";
+                }
                 $message .= implode("\n    ", $alternatives);
             }
 
@@ -619,7 +628,7 @@ class Application
      *
      * @return array An array of abbreviations
      */
-    static public function getAbbreviations($names)
+    public static function getAbbreviations($names)
     {
         $abbrevs = array();
         foreach ($names as $name) {
@@ -834,8 +843,15 @@ class Application
      */
     protected function getTerminalWidth()
     {
-        if (defined('PHP_WINDOWS_VERSION_BUILD') && $ansicon = getenv('ANSICON')) {
-            return preg_replace('{^(\d+)x.*$}', '$1', $ansicon);
+        if (defined('PHP_WINDOWS_VERSION_BUILD')) {
+            if ($ansicon = getenv('ANSICON')) {
+                return preg_replace('{^(\d+)x.*$}', '$1', $ansicon);
+            }
+
+            exec('mode CON', $execData);
+            if (preg_match('{columns:\s*(\d+)}i', $execData[4], $matches)) {
+                return $matches[1];
+            }
         }
 
         if (preg_match("{rows.(\d+);.columns.(\d+);}i", $this->getSttyColumns(), $match)) {
@@ -850,8 +866,15 @@ class Application
      */
     protected function getTerminalHeight()
     {
-        if (defined('PHP_WINDOWS_VERSION_BUILD') && $ansicon = getenv('ANSICON')) {
-            return preg_replace('{^\d+x\d+ \(\d+x(\d+)\)$}', '$1', trim($ansicon));
+        if (defined('PHP_WINDOWS_VERSION_BUILD')) {
+            if ($ansicon = getenv('ANSICON')) {
+                return preg_replace('{^\d+x\d+ \(\d+x(\d+)\)$}', '$1', trim($ansicon));
+            }
+
+            exec('mode CON', $execData);
+            if (preg_match('{lines:\s*(\d+)}i', $execData[3], $matches)) {
+                return $matches[1];
+            }
         }
 
         if (preg_match("{rows.(\d+);.columns.(\d+);}i", $this->getSttyColumns(), $match)) {
@@ -868,7 +891,7 @@ class Application
      */
     protected function getCommandName(InputInterface $input)
     {
-        return $input->getFirstArgument('command');
+        return $input->getFirstArgument();
     }
 
     /**
@@ -1027,7 +1050,7 @@ class Application
      * if nothing is found in $collection, try in $abbrevs
      *
      * @param string               $name       The string
-     * @param array|Traversable    $collection The collecion
+     * @param array|Traversable    $collection The collection
      * @param array                $abbrevs    The abbreviations
      * @param Closure|string|array $callback   The callable to transform collection item before comparison
      *

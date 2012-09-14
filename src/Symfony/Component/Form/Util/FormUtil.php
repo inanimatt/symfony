@@ -16,16 +16,6 @@ namespace Symfony\Component\Form\Util;
  */
 abstract class FormUtil
 {
-    const PLURAL_SUFFIX = 0;
-
-    const PLURAL_SUFFIX_LENGTH = 1;
-
-    const PLURAL_SUFFIX_AFTER_VOCAL = 2;
-
-    const PLURAL_SUFFIX_AFTER_CONS = 3;
-
-    const SINGULAR_SUFFIX = 4;
-
     /**
      * Map english plural to singular suffixes
      *
@@ -34,7 +24,7 @@ abstract class FormUtil
      * @see http://english-zone.com/spelling/plurals.html
      * @see http://www.scribd.com/doc/3271143/List-of-100-Irregular-Plural-Nouns-in-English
      */
-    static private $pluralMap = array(
+    private static $pluralMap = array(
         // First entry: plural suffix, reversed
         // Second entry: length of plural suffix
         // Third entry: Whether the suffix may succeed a vocal
@@ -117,19 +107,19 @@ abstract class FormUtil
      * @return string|array The singular form or an array of possible singular
      *                      forms
      */
-    static public function singularify($plural)
+    public static function singularify($plural)
     {
         $pluralRev = strrev($plural);
         $lowerPluralRev = strtolower($pluralRev);
         $pluralLength = strlen($lowerPluralRev);
 
-        // The outer loop $i iterates over the entries of the plural table
+        // The outer loop iterates over the entries of the plural table
         // The inner loop $j iterates over the characters of the plural suffix
         // in the plural table to compare them with the characters of the actual
         // given plural suffix
-        for ($i = 0, $numPlurals = count(self::$pluralMap); $i < $numPlurals; ++$i) {
-            $suffix = self::$pluralMap[$i][self::PLURAL_SUFFIX];
-            $suffixLength = self::$pluralMap[$i][self::PLURAL_SUFFIX_LENGTH];
+        foreach (self::$pluralMap as $map) {
+            $suffix = $map[0];
+            $suffixLength = $map[1];
             $j = 0;
 
             // Compare characters in the plural table and of the suffix of the
@@ -145,17 +135,19 @@ abstract class FormUtil
                     if ($j < $pluralLength) {
                         $nextIsVocal = false !== strpos('aeiou', $lowerPluralRev[$j]);
 
-                        if (!self::$pluralMap[$i][self::PLURAL_SUFFIX_AFTER_VOCAL] && $nextIsVocal) {
+                        if (!$map[2] && $nextIsVocal) {
+                            // suffix may not succeed a vocal but next char is one
                             break;
                         }
 
-                        if (!self::$pluralMap[$i][self::PLURAL_SUFFIX_AFTER_CONS] && !$nextIsVocal) {
+                        if (!$map[3] && !$nextIsVocal) {
+                            // suffix may not succeed a consonant but next char is one
                             break;
                         }
                     }
 
                     $newBase = substr($plural, 0, $pluralLength - $suffixLength);
-                    $newSuffix = self::$pluralMap[$i][self::SINGULAR_SUFFIX];
+                    $newSuffix = $map[4];
 
                     // Check whether the first character in the plural suffix
                     // is uppercased. If yes, uppercase the first character in
@@ -192,31 +184,21 @@ abstract class FormUtil
     }
 
     /**
-     * Returns whether the given choice is a group.
+     * Returns whether the given data is empty.
      *
-     * @param mixed $choice A choice
+     * This logic is reused multiple times throughout the processing of
+     * a form and needs to be consistent. PHP's keyword `empty` cannot
+     * be used as it also considers 0 and "0" to be empty.
      *
-     * @return Boolean Whether the choice is a group
+     * @param  mixed $data
+     *
+     * @return Boolean
      */
-    static public function isChoiceGroup($choice)
+    public static function isEmpty($data)
     {
-        return is_array($choice) || $choice instanceof \Traversable;
-    }
-
-    /**
-     * Returns whether the given choice is selected.
-     *
-     * @param mixed $choice The choice
-     * @param mixed $value  the value
-     *
-     * @return Boolean Whether the choice is selected
-     */
-    static public function isChoiceSelected($choice, $value)
-    {
-        if (is_array($value)) {
-            return false !== array_search($choice, $value, true);
-        }
-
-        return $choice === $value;
+        // Should not do a check for array() === $data!!!
+        // This method is used in occurrences where arrays are
+        // not considered to be empty, ever.
+        return null === $data || '' === $data;
     }
 }
